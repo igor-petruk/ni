@@ -13,7 +13,7 @@ class TargetWatcher(object):
         self.wm = WatchManager()
         
         self.watched = {}
-        self.watched_by_project = collections.defaultdict(set)
+        self.watched_configs = collections.defaultdict(set)
 
         mask = (EventsCodes.ALL_FLAGS['IN_DELETE'] | 
                 EventsCodes.ALL_FLAGS['IN_CREATE'] |
@@ -31,6 +31,17 @@ class TargetWatcher(object):
         self.watch = self.wm.add_watch(common.GetRootFromEnv(), mask, rec=True, auto_add=True)
         self.modification_handlers = []
     
+    def _GetAllConfigsForTarget(self, target_name):
+        prefix = ""
+        config_dirs = [""]
+        for path_element in target_name.split("/"):
+            if prefix:
+                prefix = prefix + "/" + path_element
+            else:
+                prefix = path_element
+            config_dirs.append(prefix)
+        return config_dirs
+
     def AddModificationHandler(self, handler):
         self.modification_handlers.append(handler)
 
@@ -42,13 +53,7 @@ class TargetWatcher(object):
             rel_path = event.pathname[root_prefix_len+1:]
             if rel_path.endswith(common.CONF_NAME):
                 conf_dir = rel_path[:-len(common.CONF_NAME)-1]
-                if not conf_dir:
-                    modified_configs.update(self.watched.values())
-                elif conf_dir.find("/") == -1:
-                    modified_configs.update(self.watched_by_project.get(conf_dir, set()))
-                else:
-                    if conf_dir in self.watched:
-                        modified_configs.add(self.watched[conf_dir])
+                modified_configs.update(self.watched_configs[conf_dir])
             else:
                 conf_dir = rel_path[:-len(os.path.basename(rel_path))-1]
                 if conf_dir in self.watched:
@@ -84,12 +89,14 @@ class TargetWatcher(object):
 
     def AddTarget(self, target):
         self.watched[target.GetName()] = target
-        self.watched_by_project[target.GetProject()].add(target)
-        logging.info("watched %s %s", self.watched, self.watched_by_project)
+        for prefix in self._GetAllConfigsForTarget(target.GetName()):
+            self.watched_configs[prefix].add(target)
+        logging.info("watched %s %s", self.watched, self.watched_configs)
 
     def RemoveTarget(self, target):
         del self.watched[target.GetName()]
-        self.watched_by_project[target.GetProject()].remove(target)
+        for prefix in self._GetAllConfigsForTarget(target.GetName()):
+            self.watched_configs[prefix].remove(target)
 
 
 # tw = TargetWatcher()

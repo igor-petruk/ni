@@ -86,10 +86,12 @@ class CppStaticLibraryBuilder(object):
             args.extend(["-o", output_file])
             RunProcess(args)
         if output_files:
-            if not os.path.exists(target.GetProjectOutDir()):
-                os.makedirs(target.GetProjectOutDir())
-            output_archive = os.path.join(target.GetProjectOutDir(),
-                    "lib%s.a" % (target.GetModule()))
+            module_parent_dir = os.path.dirname(
+                    os.path.join(target.GetOutDir(), target.GetName()))
+            if not os.path.exists(module_parent_dir):
+                os.makedirs(module_parent_dir)
+            output_archive = os.path.join(module_parent_dir,
+                    "lib%s.a" % (os.path.basename(target.GetName())))
             args = []
             args.extend(["ar","rc"])
             args.extend([output_archive])
@@ -117,7 +119,7 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
             self._FillDependencies(dep_name, deps)
         logging.info("Collected deps for %s: %s", target_name, deps)
         binary_name = os.path.join(
-                target.GetProjectOutDir(), target.GetModule())
+                target.GetOutDir(), target.GetName())
         args = []
         args.extend(["clang++"])
         pkg_deps = set()

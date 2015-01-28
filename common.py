@@ -15,9 +15,7 @@ def GetRootFromEnv():
 
 class Target(object):
     def __init__(self, name):
-        project, module = name.split("/")
-        self._project = project
-        self._module = module
+        self._name = name
         self._root = GetRootFromEnv()
         self._config = None
 
@@ -28,7 +26,7 @@ class Target(object):
         return self._config
 
     def GetName(self):
-        return "%s/%s" % (self._project, self._module)
+        return self._name
     
     def __repr__(self):
         return "Target('%s')" % self.GetName()
@@ -39,26 +37,11 @@ class Target(object):
     def __eq__(self, other):
         return self.GetName() == other.GetName()
 
-    def GetProject(self):
-        return self._project
-
-    def GetModule(self):
-        return self._module
-
     def GetRootDir(self):
         return self._root
 
-    def GetRootConf(self):
-        return os.path.join(self.GetRootDir(), CONF_NAME)
-
-    def GetProjectDir(self):
-        return os.path.join(self.GetRootDir(), self.GetProject())
-
-    def GetProjectConf(self):
-        return os.path.join(self.GetProjectDir(), CONF_NAME)
-
     def GetModuleDir(self):
-        return os.path.join(self.GetProjectDir(), self.GetModule())
+        return os.path.join(self.GetRootDir(), self.GetName())
 
     def GetObjDir(self):
         return os.path.join(self.GetRootDir(), "obj")
@@ -69,11 +52,5 @@ class Target(object):
     def GetOutDir(self):
         return os.path.join(self.GetRootDir(), "out")
     
-    def GetProjectOutDir(self):
-        return os.path.join(self.GetOutDir(), self.GetProject())
-
-    def GetModuleConf(self):
-        return os.path.join(self.GetModuleDir(), CONF_NAME)
-   
     def Exists(self):
         return os.path.exists(self.GetModuleDir())

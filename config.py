@@ -26,16 +26,22 @@ class Config(object):
         return self.env
 
 class Evaluator(object):
- 
+    
+    def GetConfForPath(self, path):
+        return os.path.join(path, common.CONF_NAME)
+
     def RefreshConfig(self, target):
         if not target.Exists():
             raise common.Error("%s does not exist" % target)
         logging.info("Reading configs for %s", target)
-        config_files = [
-            target.GetRootConf(),
-            target.GetProjectConf(),
-            target.GetModuleConf(),
-        ]
+
+        current_config_dir = target.GetRootDir()
+        config_files = []
+        
+        for dir_in_path in [""]+target.GetName().split("/"):
+            current_config_dir = os.path.join(current_config_dir, dir_in_path)
+            config_files.append(self.GetConfForPath(current_config_dir))
+            
         config = Config()
         for config_file in config_files:
             if os.path.exists(config_file):
