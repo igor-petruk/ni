@@ -41,7 +41,6 @@ class DependencyTracker(object):
                     self._provides[dependency].add(target)
                 self._AddTarget(dependency)
             self._items_added.add(target)
-            # self._Notify(self._on_tracked_handlers, target)
 
     def _RemoveTarget(self, target):
         if target not in self._active_targets and target not in self._provides:
@@ -54,7 +53,6 @@ class DependencyTracker(object):
                         del self._provides[dependency]
                     self._RemoveTarget(dependency)
                 self._items_removed.add(target)
-                # self._Notify(self._on_untracked_handlers, target)
     
     def _DumpState(self):
         logging.info("Active: %s", self._active_targets)
@@ -118,7 +116,6 @@ class DependencyTracker(object):
             self._RemoveTarget(dependency)
         del self._depends[target]
         self._items_removed.add(target)
-        # self._Notify(self._on_untracked_handlers, target)
         self._AddTarget(target)
         self._DumpState()
         added, removed = self._NotifyOnChanges()

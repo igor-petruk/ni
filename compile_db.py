@@ -33,7 +33,8 @@ def DbEntryDecoder(dct):
 
 class Database(object):
     def __init__(self):
-        self._compile_commands_file_path = os.path.join(common.GetRootFromEnv(), "compile_commands.json")
+        self._compile_commands_file_path = os.path.join(
+                common.GetRootFromEnv(), "compile_commands.json")
         self._database = {}
         self._LoadDatabase()
 
@@ -46,9 +47,11 @@ class Database(object):
                     for db_list_entry in database_list:
                         self._database[db_list_entry.file_path] = db_list_entry
                     self._CleanFromNonExisting()
-                logging.info("Loaded previous compilation database: %d entries", len(self._database))
+                logging.info("Loaded previous compilation database: %d entries",
+                        len(self._database))
             except ValueError as e:
-                logging.warning("Compilation database is corrupted, making empty database...")
+                logging.warning("Compilation database is corrupted, "
+                                "making empty database...")
 
     def _CleanFromNonExisting(self):
         new_database = {}

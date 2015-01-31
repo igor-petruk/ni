@@ -28,7 +28,8 @@ class TargetWatcher(object):
 
         self.notifier = ThreadedNotifier(self.wm, handler)
         self.notifier.start()
-        self.watch = self.wm.add_watch(common.GetRootFromEnv(), mask, rec=True, auto_add=True)
+        self.watch = self.wm.add_watch(
+                common.GetRootFromEnv(), mask, rec=True, auto_add=True)
         self.modification_handlers = []
     
     def _GetAllConfigsForTarget(self, target_name):
@@ -83,7 +84,7 @@ class TargetWatcher(object):
     def Join(self):
         self.notifier.join()
         self.acc_thread.join()
-    
+
     def ProcessEvent(self, event):
         self.events_queue.put(event)
 
@@ -98,12 +99,3 @@ class TargetWatcher(object):
         for prefix in self._GetAllConfigsForTarget(target.GetName()):
             self.watched_configs[prefix].remove(target)
 
-
-# tw = TargetWatcher()
-#
-# tw.AddTarget(common.Target("conftool/core"))
-# tw.AddTarget(common.Target("mathtools/tool"))
-# tw.AddTarget(common.Target("mathtools/utils"))
-#
-#
-# tw.Join()

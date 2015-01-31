@@ -1,7 +1,6 @@
 import os
 
 import common
-import config
 import logging
 import time
 
