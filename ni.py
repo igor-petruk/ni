@@ -8,6 +8,7 @@ import notify
 import manager
 import graph
 import compile_db
+import cpp
 
 class App(object):
 
@@ -17,8 +18,13 @@ class App(object):
                 lambda deps: self.manager.GetDependencies(deps))
         
         self.compilation_database = compile_db.Database()
+        
+        self.targets_state = build.TargetsState()
 
-        self.build_tracker = build.BuildTracker(self.graph, self.compilation_database)
+        self.builder = build.Builder(self.targets_state, self.compilation_database)
+
+        self.build_tracker = build.BuildTracker(
+                self.graph, self.targets_state, self.builder)
         
         self.target_watcher = notify.TargetWatcher()
         
@@ -30,8 +36,8 @@ class App(object):
                 self.build_tracker,
                 self.config_evaluator)
         
-        self.cpp_lib_builder = build.CppStaticLibraryBuilder(self.compilation_database)
-        self.cpp_binary_builder = build.CppBinaryBuilder(self.compilation_database)
+        self.cpp_lib_builder = cpp.CppStaticLibraryBuilder(self.compilation_database)
+        self.cpp_binary_builder = cpp.CppBinaryBuilder(self.compilation_database)
 
         # Post init
         self.graph.AddTrackedHandler(
