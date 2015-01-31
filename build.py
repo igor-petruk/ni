@@ -3,7 +3,6 @@ import logging
 import os
 import glob
 import subprocess
-import compile_db
 
 
 def RunProcess(args):
@@ -50,14 +49,18 @@ class CppStaticBinary(object):
     def __repr__(self):
         return "bin(%s)" % (self.binary_path,)
 
-class CppStaticLibraryBuilder(object):
-    def __init__(self, mode, targets, build_results):
-        self.mode = mode
-        self.targets = targets
+class BuildingContext(object):
+    def __init__(self, targets, build_results, mode):
         self.build_results = build_results
-        
-    def Build(self, target_name, compilation_database):
-        target = self.targets[target_name]
+        self.targets = targets
+        self.mode = mode
+
+class CppStaticLibraryBuilder(object):
+    def __init__(self, compilation_database):
+        self.compilation_database = compilation_database
+    
+    def Build(self, context, target_name):
+        target = context.targets[target_name]
         env = target.GetConfig().GetEnv()
         logging.info("Env %s", env)
         cflags = env["cflags"]
@@ -86,7 +89,7 @@ class CppStaticLibraryBuilder(object):
                     os.path.basename(source)+".o")
             output_files.append(output_file)
             args.extend(["-o", output_file])
-            compilation_database.SubmitCommand(source, " ".join(args))
+            self.compilation_database.SubmitCommand(source, " ".join(args))
             RunProcess(args)
         if output_files:
             module_parent_dir = os.path.dirname(
@@ -112,14 +115,15 @@ class CppStaticLibraryBuilder(object):
         return sources
 
 class CppBinaryBuilder(CppStaticLibraryBuilder):
-    def Build(self, target_name, compilation_database):
-        self_result = super(CppBinaryBuilder, self).Build(target_name, compilation_database)
+    def Build(self, context, target_name):
+        self_result = super(CppBinaryBuilder, self).Build(
+                context, target_name)
         deps = self_result
 
-        target = self.targets[target_name]
+        target = context.targets[target_name]
         env = target.GetConfig().GetEnv()
         for dep_name in env["deps"]:
-            self._FillDependencies(dep_name, deps)
+            self._FillDependencies(context, dep_name, deps)
         logging.info("Collected deps for %s: %s", target_name, deps)
         binary_name = os.path.join(
                 target.GetOutDir(), target.GetName())
@@ -135,47 +139,50 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
         RunProcess(args)
         return CppStaticBinary(binary_name)
 
-    def _FillDependencies(self, target_name, deps):
-        logging.info("Fill %r %r", self.build_results, deps)
-        if target_name in self.build_results:
-            target = self.targets[target_name]
+    def _FillDependencies(self, context, target_name, deps):
+        logging.info("Fill %r %r", context.build_results, deps)
+        if target_name in context.build_results:
+            target = context.targets[target_name]
             env = target.GetConfig().GetEnv()
             for dep_name in env["deps"]:
-                self._FillDependencies(dep_name, deps)
-            result = self.build_results[target_name]
+                self._FillDependencies(context, dep_name, deps)
+            result = context.build_results[target_name]
             deps.extend(result) 
 
 
 class Builder(object):
-    def __init__(self, targets):
+    def __init__(self, targets, compilation_database):
         self.targets = targets
         self.build_results = {}
         self.root = common.GetRootFromEnv()
-        self.mode_builders = {
-            "c++/default": CppStaticLibraryBuilder,
-            "c++/binary": CppBinaryBuilder,
-        }
-        self.compilation_database = compile_db.Database()
+        self.builders = {}
+        self.compilation_database = compilation_database
+
+    def RegisterBuilder(self, mode, builder):
+        self.builders[mode] = builder
 
     def Build(self, target_name):
         logging.info("Building %s", target_name)
         target = self.targets[target_name]
         env =  target.GetConfig().GetEnv()
-        mode_builder_func = self.mode_builders[env["mode"]]
-        logging.info("Picked %s for mode %s", mode_builder_func, env["mode"])
-        mode_builder = mode_builder_func(env["mode"],
-                self.targets, self.build_results)
-        result = mode_builder.Build(target_name, self.compilation_database)
+        builder = self.builders[env["mode"]]
+
+        logging.info("Picked %s for mode %s", builder, env["mode"])
+        
+        context = BuildingContext(self.targets,
+                self.build_results, env["mode"])
+
+        result = builder.Build(context, target_name)
         logging.info("Result for %s: %s", target_name, result)
         self.build_results[target_name] = result
         self.compilation_database.Write()
 
 class BuildTracker(object):
-    def __init__(self, graph):
+    def __init__(self, graph, compilation_database):
         self.targets = {}
         self.modified = set()
         self.graph = graph
-        self.builder = Builder(self.targets)
+        self.builder = Builder(self.targets, compilation_database)
 
     def AddTarget(self, target):
         self.targets[target.GetName()] = target
@@ -211,6 +218,7 @@ class BuildTracker(object):
                 self.modified = self.modified - ready_to_build
             else:
                 if self.modified:
-                    logging.warning("Some targets cannot be built %s", sorted(self.modified))
+                    logging.warning("Some targets cannot be built %s",
+                            sorted(self.modified))
                 break
         self.modified = set()
