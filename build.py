@@ -3,6 +3,8 @@ import logging
 import os
 import glob
 import subprocess
+import compile_db
+
 
 def RunProcess(args):
     logging.info("Running %s", args)
@@ -54,7 +56,7 @@ class CppStaticLibraryBuilder(object):
         self.targets = targets
         self.build_results = build_results
         
-    def Build(self, target_name):
+    def Build(self, target_name, compilation_database):
         target = self.targets[target_name]
         env = target.GetConfig().GetEnv()
         logging.info("Env %s", env)
@@ -84,6 +86,7 @@ class CppStaticLibraryBuilder(object):
                     os.path.basename(source)+".o")
             output_files.append(output_file)
             args.extend(["-o", output_file])
+            compilation_database.SubmitCommand(source, " ".join(args))
             RunProcess(args)
         if output_files:
             module_parent_dir = os.path.dirname(
@@ -109,8 +112,8 @@ class CppStaticLibraryBuilder(object):
         return sources
 
 class CppBinaryBuilder(CppStaticLibraryBuilder):
-    def Build(self, target_name):
-        self_result = super(CppBinaryBuilder, self).Build(target_name)
+    def Build(self, target_name, compilation_database):
+        self_result = super(CppBinaryBuilder, self).Build(target_name, compilation_database)
         deps = self_result
 
         target = self.targets[target_name]
@@ -152,6 +155,7 @@ class Builder(object):
             "c++/default": CppStaticLibraryBuilder,
             "c++/binary": CppBinaryBuilder,
         }
+        self.compilation_database = compile_db.Database()
 
     def Build(self, target_name):
         logging.info("Building %s", target_name)
@@ -161,9 +165,10 @@ class Builder(object):
         logging.info("Picked %s for mode %s", mode_builder_func, env["mode"])
         mode_builder = mode_builder_func(env["mode"],
                 self.targets, self.build_results)
-        result = mode_builder.Build(target_name)
+        result = mode_builder.Build(target_name, self.compilation_database)
         logging.info("Result for %s: %s", target_name, result)
         self.build_results[target_name] = result
+        self.compilation_database.Write()
 
 class BuildTracker(object):
     def __init__(self, graph):

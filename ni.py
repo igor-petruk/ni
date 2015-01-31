@@ -1,4 +1,9 @@
 #!/usr/bin/python
 
-def a():
-    print("2")
+class Context(object):
+
+    def __init__(self):
+        pass
+
+
+Context().Run()
