@@ -10,12 +10,15 @@ import graph
 import compile_db
 import cpp
 import logging
+import pkg_config
 
 class App(object):
 
     def __init__(self):
         LOGGING_FORMAT = "[%(filename)s:%(lineno)s] %(message)s"
         logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
+        
+        self.pkg_config = pkg_config.PkgConfig()
 
         self.graph = graph.DependencyTracker(
                 lambda deps: self.manager.GetDependencies(deps))
@@ -40,8 +43,10 @@ class App(object):
                 self.build_tracker,
                 self.config_evaluator)
         
-        self.cpp_lib_builder = cpp.CppStaticLibraryBuilder(self.compilation_database)
-        self.cpp_binary_builder = cpp.CppBinaryBuilder(self.compilation_database)
+        self.cpp_lib_builder = cpp.CppStaticLibraryBuilder(
+                self.compilation_database, self.pkg_config)
+        self.cpp_binary_builder = cpp.CppBinaryBuilder(
+                self.compilation_database, self.pkg_config)
 
         # Post init
         self.graph.AddTrackedHandler(

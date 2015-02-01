@@ -64,7 +64,8 @@ class TargetWatcher(object):
             self.ModificationsFound(modified_configs, modified_targets)
 
     def ModificationsFound(self, modified_configs, modified_targets):
-        logging.info("Files modified: configs %s, other %s", modified_configs, modified_targets)
+        logging.info("Files modified: configs %s, other %s",
+                modified_configs, modified_targets)
         for handler in self.modification_handlers:
             handler(modified_configs, modified_targets)
 

@@ -4,20 +4,6 @@ import subprocess
 import glob
 import utils
 
-@utils.memoize(log=True)
-def GetPkgConfigFlags(packages_list, cflags=False, libs=False):
-    if packages_list:
-        args = []
-        args.extend(["pkg-config"])
-        if cflags:
-            args.extend(["--cflags"])
-        if libs:
-            args.extend(["--libs"])
-        args.extend(list(packages_list))
-        _, out, _ = utils.RunProcess(args)
-        return out.decode().strip().split(" ")
-    else:
-        return []
 
 class CppStaticLibrary(object):
     def __init__(self, archive_path, lflags, pkg_deps):
@@ -36,8 +22,9 @@ class CppStaticBinary(object):
         return "bin(%s)" % (self.binary_path,)
 
 class CppStaticLibraryBuilder(object):
-    def __init__(self, compilation_database):
+    def __init__(self, compilation_database, pkg_config):
         self.compilation_database = compilation_database
+        self.pkg_config = pkg_config
     
     def Build(self, context, target_name):
         target = context.targets[target_name]
@@ -46,7 +33,8 @@ class CppStaticLibraryBuilder(object):
         cflags = env["cflags"]
 
         pkg_config_deps = env["pkg_config"]
-        pkg_config_cflags = GetPkgConfigFlags(pkg_config_deps, cflags=True)
+        pkg_config_cflags = self.pkg_config.GetFlags(
+                tuple(pkg_config_deps), cflags=True)
         
         sources = self._ResolveSources(target)
         logging.info("Sources %s", sources)
@@ -116,7 +104,7 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
             args.extend([dep.archive_path])
             args.extend(dep.lflags)
             pkg_deps.update(dep.pkg_deps)
-        args.extend(GetPkgConfigFlags(pkg_deps, libs=True))
+        args.extend(self.pkg_config.GetFlags(tuple(pkg_deps), libs=True))
         args.extend(["-o", binary_name])
         utils.RunProcess(args)
         return CppStaticBinary(binary_name)
