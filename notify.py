@@ -10,6 +10,8 @@ import queue
 class TargetWatcher(object):
     def __init__(self, configuration):
         self._root = configuration.GetExpandedDir("projects", "root_dir")
+        self._batch_timeout = float(
+            configuration.Get("file_watcher", "event_batch_timeout_ms")) / 1000
         self._moddef_filename = configuration.Get(
                 "general", "module_definition_filename")
         self.wm = WatchManager()
@@ -77,7 +79,7 @@ class TargetWatcher(object):
         while True:
             try:
                 if event_buffer:
-                    item = self.events_queue.get(block=True,timeout=0.3)
+                    item = self.events_queue.get(block=True,timeout=self._batch_timeout)
                 else:
                     item = self.events_queue.get(block=True)
                 event_buffer.append(item)
