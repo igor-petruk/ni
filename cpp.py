@@ -22,7 +22,8 @@ class CppStaticBinary(object):
         return "bin(%s)" % (self.binary_path,)
 
 class CppStaticLibraryBuilder(object):
-    def __init__(self, compilation_database, pkg_config):
+    def __init__(self, compilation_database, pkg_config, threading_manager):
+        self.threading_manager = threading_manager
         self.compilation_database = compilation_database
         self.pkg_config = pkg_config
     
@@ -43,8 +44,9 @@ class CppStaticLibraryBuilder(object):
             os.makedirs(target.GetTargetObjDir())
         
         output_files = []
+        executor = self.threading_manager.GetThreadPool("modules")
+        futures = []
         for source in sources:
-
             args = []
             args.extend(["clang++"])
             args.extend(cflags)
@@ -58,7 +60,10 @@ class CppStaticLibraryBuilder(object):
             output_files.append(output_file)
             args.extend(["-o", output_file])
             self.compilation_database.SubmitCommand(source, " ".join(args))
-            utils.RunProcess(args)
+            result = executor.submit(utils.RunProcess, args)
+            futures.append(result)
+        for future in futures:
+            future.result()
         if output_files:
             module_parent_dir = os.path.dirname(
                     os.path.join(target.GetOutDir(), target.GetName()))

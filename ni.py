@@ -52,9 +52,9 @@ class App(object):
                 self.module_definition_evaluator)
         
         self.cpp_lib_builder = cpp.CppStaticLibraryBuilder(
-                self.compilation_database, self.pkg_config)
+                self.compilation_database, self.pkg_config, self.threading_manager)
         self.cpp_binary_builder = cpp.CppBinaryBuilder(
-                self.compilation_database, self.pkg_config)
+                self.compilation_database, self.pkg_config, self.threading_manager)
 
         # Post init
         self.graph.AddTrackedHandler(

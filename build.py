@@ -2,7 +2,6 @@ import logging
 import os
 import glob
 import subprocess
-import concurrent.futures
 
 class BuildingContext(object):
     def __init__(self, targets, build_results, mode):
