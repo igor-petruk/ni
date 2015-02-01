@@ -24,7 +24,7 @@ class Configuration(object):
         if (section in self.config) and (key in self.config[section]):
             return self.config[section][key]
         else:
-            return self.next_configuration.Get(section, key)
+            return self.next_configuration.Get(section, key, raise_exception, default)
 
     def GetExpandedDir(self, *args, **kwargs):
         result = self.Get(*args, **kwargs)

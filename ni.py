@@ -12,6 +12,7 @@ import graph
 import compile_db
 import cpp
 import pkg_config
+import thread_pools
 
 class App(object):
 
@@ -21,6 +22,8 @@ class App(object):
         
         self.configuration = config.Configuration(
                 ["~/.config/ni/settings.ini", "/etc/ni/settings.ini"])
+        
+        self.threading_manager = thread_pools.ThreadingManager(self.configuration)
 
         self.pkg_config = pkg_config.PkgConfig()
 
@@ -35,7 +38,7 @@ class App(object):
 
         self.build_tracker = build.BuildTracker(
                 self.graph, self.targets_state, self.builder,
-                self.compilation_database)
+                self.compilation_database, self.threading_manager)
         
         self.target_watcher = notify.TargetWatcher(self.configuration)
         

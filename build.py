@@ -41,8 +41,10 @@ class TargetsState(object):
         self.targets = {}
 
 class BuildTracker(object):
-    def __init__(self, graph, targets_state, builder, compilation_database):
+    def __init__(self, graph, targets_state, builder, compilation_database,
+            threading_manager):
         self.targets_state = targets_state
+        self.threading_manager = threading_manager
         self.modified = set()
         self.graph = graph
         self.builder = builder
@@ -79,14 +81,14 @@ class BuildTracker(object):
                     ready_to_build.add(target_name)
             if ready_to_build:
                 logging.info("Building wave %s", sorted(ready_to_build))
-                with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-                    completion_futures = []
-                    for ready_to_build_target_name in ready_to_build:
-                        result = executor.submit(
-                                lambda: self.builder.Build(ready_to_build_target_name))
-                        completion_futures.append(result)
-                    for completion_future in completion_futures:
-                        completion_future.result()
+                executor = self.threading_manager.GetThreadPool("wave")
+                completion_futures = []
+                for ready_to_build_target_name in ready_to_build:
+                    result = executor.submit(
+                            lambda: self.builder.Build(ready_to_build_target_name))
+                    completion_futures.append(result)
+                for completion_future in completion_futures:
+                    completion_future.result()
 
                 self.modified = self.modified - ready_to_build
             else:
