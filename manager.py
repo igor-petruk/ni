@@ -5,11 +5,11 @@ import logging
 import time
 
 class Manager(object):
-    def __init__(self, graph, target_watcher, build_tracker, config_evaluator):
+    def __init__(self, graph, target_watcher, build_tracker, module_definition_evaluator):
         self.graph = graph
         self.target_watcher = target_watcher
         self.build_tracker = build_tracker
-        self.config_evaluator = config_evaluator
+        self.module_definition_evaluator = module_definition_evaluator
 
     def Join(self):
         self.target_watcher.Join()
@@ -45,10 +45,10 @@ class Manager(object):
         self.build_tracker.ReloadTarget(target)
         logging.info("Manager refreshing %s", target_name)
 
-    def OnModifiedFiles(self, modified_configs, modified_other_files):
+    def OnModifiedFiles(self, modified_module_definitions, modified_other_files):
         started_eval = time.time()
-        for modified_config in modified_configs:
-            self.graph.RefreshTarget(modified_config.GetName())
+        for modified_module_definition in modified_module_definitions:
+            self.graph.RefreshTarget(modified_module_definition.GetName())
         for modified_other_files_item in modified_other_files:
             self.graph.RefreshTarget(modified_other_files_item.GetName())
         started_build = time.time()
@@ -60,6 +60,6 @@ class Manager(object):
 
     def _LoadTarget(self, target_name):
         target = common.Target(target_name)
-        self.config_evaluator.RefreshConfig(target)
+        self.module_definition_evaluator.RefreshModuleDefinition(target)
         return target
 

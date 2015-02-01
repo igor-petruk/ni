@@ -30,7 +30,7 @@ class Evaluator(object):
     def GetModuleDefinitionForPath(self, path):
         return os.path.join(path, common.CONF_NAME)
 
-    def RefreshConfig(self, target):
+    def RefreshModuleDefinition(self, target):
         if not target.Exists():
             raise common.Error("%s does not exist" % target)
         logging.info("Reading module definitions for %s", target)

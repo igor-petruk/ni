@@ -13,7 +13,7 @@ class TargetWatcher(object):
         self.wm = WatchManager()
         
         self.watched = {}
-        self.watched_configs = collections.defaultdict(set)
+        self.watched_module_definitions = collections.defaultdict(set)
 
         mask = (EventsCodes.ALL_FLAGS['IN_DELETE'] | 
                 EventsCodes.ALL_FLAGS['IN_CREATE'] |
@@ -32,42 +32,43 @@ class TargetWatcher(object):
                 common.GetRootFromEnv(), mask, rec=True, auto_add=True)
         self.modification_handlers = []
     
-    def _GetAllConfigsForTarget(self, target_name):
+    def _GetAllModuleDefinitionsForTarget(self, target_name):
         prefix = ""
-        config_dirs = [""]
+        module_definition_dirs = [""]
         for path_element in target_name.split("/"):
             if prefix:
                 prefix = prefix + "/" + path_element
             else:
                 prefix = path_element
-            config_dirs.append(prefix)
-        return config_dirs
+            module_definition_dirs.append(prefix)
+        return module_definition_dirs
 
     def AddModificationHandler(self, handler):
         self.modification_handlers.append(handler)
 
     def ProcessEventsBatch(self, batch):
         modified_targets = set()
-        modified_configs = set()
+        modified_module_definitions = set()
         root_prefix_len = len(common.GetRootFromEnv())
         for event in batch:
             rel_path = event.pathname[root_prefix_len+1:]
             if rel_path.endswith(common.CONF_NAME):
                 conf_dir = rel_path[:-len(common.CONF_NAME)-1]
-                modified_configs.update(self.watched_configs[conf_dir])
+                modified_module_definitions.update(
+                        self.watched_module_definitions[conf_dir])
             else:
                 conf_dir = rel_path[:-len(os.path.basename(rel_path))-1]
                 if conf_dir in self.watched:
                     modified_targets.add(self.watched[conf_dir])
                 
-        if modified_configs or modified_targets:
-            self.ModificationsFound(modified_configs, modified_targets)
+        if modified_module_definitions or modified_targets:
+            self.ModificationsFound(modified_module_definitions, modified_targets)
 
-    def ModificationsFound(self, modified_configs, modified_targets):
-        logging.info("Files modified: configs %s, other %s",
-                modified_configs, modified_targets)
+    def ModificationsFound(self, modified_module_definitions, modified_targets):
+        logging.info("Files modified: module definitions %s, other %s",
+                modified_module_definitions, modified_targets)
         for handler in self.modification_handlers:
-            handler(modified_configs, modified_targets)
+            handler(modified_module_definitions, modified_targets)
 
     def AccumulationThreadProc(self):
         event_buffer = []
@@ -91,12 +92,12 @@ class TargetWatcher(object):
 
     def AddTarget(self, target):
         self.watched[target.GetName()] = target
-        for prefix in self._GetAllConfigsForTarget(target.GetName()):
-            self.watched_configs[prefix].add(target)
-        logging.info("watched %s %s", self.watched, self.watched_configs)
+        for prefix in self._GetAllModuleDefinitionsForTarget(target.GetName()):
+            self.watched_module_definitions[prefix].add(target)
+        logging.info("watched %s %s", self.watched, self.watched_module_definitions)
 
     def RemoveTarget(self, target):
         del self.watched[target.GetName()]
-        for prefix in self._GetAllConfigsForTarget(target.GetName()):
-            self.watched_configs[prefix].remove(target)
+        for prefix in self._GetAllModuleDefinitionsForTarget(target.GetName()):
+            self.watched_module_definitions[prefix].remove(target)
 
