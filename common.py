@@ -15,13 +15,13 @@ class Target(object):
     def __init__(self, name):
         self._name = name
         self._root = GetRootFromEnv()
-        self._config = None
+        self._module_definition = None
 
-    def SetConfig(self, config):
-        self._config = config
+    def SetModuleDefinition(self, module_definition):
+        self._module_definition = module_definition
     
-    def GetConfig(self):
-        return self._config
+    def GetModuleDefinition(self):
+        return self._module_definition
 
     def GetName(self):
         return self._name

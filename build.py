@@ -25,7 +25,7 @@ class Builder(object):
     def Build(self, target_name):
         logging.info("Building %s", target_name)
         target = self.targets_state.targets[target_name]
-        env =  target.GetConfig().GetEnv()
+        env =  target.GetModuleDefinition().GetEnv()
         builder = self.builders[env["mode"]]
 
         logging.info("Picked %s for mode %s", builder, env["mode"])

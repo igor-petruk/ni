@@ -28,7 +28,7 @@ class CppStaticLibraryBuilder(object):
     
     def Build(self, context, target_name):
         target = context.targets[target_name]
-        env = target.GetConfig().GetEnv()
+        env = target.GetModuleDefinition().GetEnv()
         logging.info("Env %s", env)
         cflags = env["cflags"]
 
@@ -91,7 +91,7 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
         deps = self_result
 
         target = context.targets[target_name]
-        env = target.GetConfig().GetEnv()
+        env = target.GetModuleDefinition().GetEnv()
         for dep_name in env["deps"]:
             self._FillDependencies(context, dep_name, deps)
         logging.info("Collected deps for %s: %s", target_name, deps)
@@ -113,7 +113,7 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
         logging.info("Fill %r %r", context.build_results, deps)
         if target_name in context.build_results:
             target = context.targets[target_name]
-            env = target.GetConfig().GetEnv()
+            env = target.GetModuleDefinition().GetEnv()
             for dep_name in env["deps"]:
                 self._FillDependencies(context, dep_name, deps)
             result = context.build_results[target_name]

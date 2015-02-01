@@ -2,7 +2,7 @@
 
 import functools
 
-import config
+import moduledef
 import build
 import notify
 import manager
@@ -35,13 +35,13 @@ class App(object):
         
         self.target_watcher = notify.TargetWatcher()
         
-        self.config_evaluator = config.Evaluator()
+        self.module_definition_evaluator = moduledef.Evaluator()
 
         self.manager = manager.Manager(
                 self.graph,
                 self.target_watcher,
                 self.build_tracker,
-                self.config_evaluator)
+                self.module_definition_evaluator)
         
         self.cpp_lib_builder = cpp.CppStaticLibraryBuilder(
                 self.compilation_database, self.pkg_config)

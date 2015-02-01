@@ -16,7 +16,7 @@ class Manager(object):
 
     def GetDependencies(self, dep):
         target = self._LoadTarget(dep)
-        return set(target.GetConfig().deps)
+        return set(target.GetModuleDefinition().deps)
 
     def AddActiveTarget(self, target_name):
         self.graph.AddTopLevelTarget(target_name)
