@@ -3,7 +3,7 @@ import logging
 import os
 import glob
 import subprocess
-
+import concurrent.futures
 
 class BuildingContext(object):
     def __init__(self, targets, build_results, mode):
@@ -13,12 +13,11 @@ class BuildingContext(object):
 
 
 class Builder(object):
-    def __init__(self, targets_state, compilation_database):
+    def __init__(self, targets_state):
         self.targets_state = targets_state
         self.build_results = {}
         self.root = common.GetRootFromEnv()
         self.builders = {}
-        self.compilation_database = compilation_database
 
     def RegisterBuilder(self, mode, builder):
         self.builders[mode] = builder
@@ -37,18 +36,18 @@ class Builder(object):
         result = builder.Build(context, target_name)
         logging.info("Result for %s: %s", target_name, result)
         self.build_results[target_name] = result
-        self.compilation_database.Write()
 
 class TargetsState(object):
     def __init__(self):
         self.targets = {}
 
 class BuildTracker(object):
-    def __init__(self, graph, targets_state, builder):
+    def __init__(self, graph, targets_state, builder, compilation_database):
         self.targets_state = targets_state
         self.modified = set()
         self.graph = graph
         self.builder = builder
+        self.compilation_database = compilation_database
 
     def AddTarget(self, target):
         self.targets_state.targets[target.GetName()] = target
@@ -60,7 +59,7 @@ class BuildTracker(object):
             self.modified.remove(target_name)
 
     def ReloadTarget(self, target):
-        self.target_state.targets[target.GetName()] = target
+        self.targets_state.targets[target.GetName()] = target
         self.modified.add(target.GetName())
 
     def ResetTarget(self, target_name):
@@ -72,15 +71,24 @@ class BuildTracker(object):
     def Build(self):
         logging.info("Must build %s", sorted(self.modified))
         while self.modified:
+            logging.info("Modified %s", self.modified)
             ready_to_build = set()
             for target_name in self.modified:
                 dependencies = self.graph.GetDependencies(target_name)
-                if not self.modified.intersection(ready_to_build):
+                logging.info("Deps of %s are %s", target_name, dependencies)
+                if not self.modified.intersection(dependencies):
                     ready_to_build.add(target_name)
             if ready_to_build:
                 logging.info("Building wave %s", sorted(ready_to_build))
-                for ready_to_build_target_name in ready_to_build:
-                    self.builder.Build(ready_to_build_target_name)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+                    completion_futures = []
+                    for ready_to_build_target_name in ready_to_build:
+                        result = executor.submit(
+                                lambda: self.builder.Build(ready_to_build_target_name))
+                        completion_futures.append(result)
+                    for completion_future in completion_futures:
+                        completion_future.result()
+
                 self.modified = self.modified - ready_to_build
             else:
                 if self.modified:
@@ -88,3 +96,4 @@ class BuildTracker(object):
                             sorted(self.modified))
                 break
         self.modified = set()
+        self.compilation_database.Write()

@@ -2,21 +2,9 @@ import logging
 import os
 import subprocess
 import glob
+import utils
 
-def RunProcess(args):
-    logging.info("Running %s", args)
-    process = subprocess.Popen(
-            args, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-    out, err = process.communicate()
-    if out:
-        logging.info("Output '%s'", out.decode())
-    if err:
-        logging.info("Error '%s'", err.decode())
-    result = process.wait()
-    logging.info("Result %s", result)
-    return result, out, err
-
+@utils.memoize(log=True)
 def GetPkgConfigFlags(packages_list, cflags=False, libs=False):
     if packages_list:
         args = []
@@ -26,7 +14,7 @@ def GetPkgConfigFlags(packages_list, cflags=False, libs=False):
         if libs:
             args.extend(["--libs"])
         args.extend(list(packages_list))
-        _, out, _ = RunProcess(args)
+        _, out, _ = utils.RunProcess(args)
         return out.decode().strip().split(" ")
     else:
         return []
@@ -82,7 +70,7 @@ class CppStaticLibraryBuilder(object):
             output_files.append(output_file)
             args.extend(["-o", output_file])
             self.compilation_database.SubmitCommand(source, " ".join(args))
-            RunProcess(args)
+            utils.RunProcess(args)
         if output_files:
             module_parent_dir = os.path.dirname(
                     os.path.join(target.GetOutDir(), target.GetName()))
@@ -90,11 +78,13 @@ class CppStaticLibraryBuilder(object):
                 os.makedirs(module_parent_dir)
             output_archive = os.path.join(module_parent_dir,
                     "lib%s.a" % (os.path.basename(target.GetName())))
+            if os.path.exists(output_archive):
+                os.remove(output_archive)
             args = []
             args.extend(["ar","rc"])
             args.extend([output_archive])
             args.extend(output_files)
-            RunProcess(args)
+            utils.RunProcess(args)
             return [CppStaticLibrary(output_archive,
                     env["lflags"], set(pkg_config_deps))]
         else:
@@ -128,7 +118,7 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
             pkg_deps.update(dep.pkg_deps)
         args.extend(GetPkgConfigFlags(pkg_deps, libs=True))
         args.extend(["-o", binary_name])
-        RunProcess(args)
+        utils.RunProcess(args)
         return CppStaticBinary(binary_name)
 
     def _FillDependencies(self, context, target_name, deps):

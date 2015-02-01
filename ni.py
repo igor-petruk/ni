@@ -9,11 +9,14 @@ import manager
 import graph
 import compile_db
 import cpp
+import logging
 
 class App(object):
 
     def __init__(self):
-        
+        LOGGING_FORMAT = "[%(filename)s:%(lineno)s] %(message)s"
+        logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
+
         self.graph = graph.DependencyTracker(
                 lambda deps: self.manager.GetDependencies(deps))
         
@@ -21,10 +24,11 @@ class App(object):
         
         self.targets_state = build.TargetsState()
 
-        self.builder = build.Builder(self.targets_state, self.compilation_database)
+        self.builder = build.Builder(self.targets_state)
 
         self.build_tracker = build.BuildTracker(
-                self.graph, self.targets_state, self.builder)
+                self.graph, self.targets_state, self.builder,
+                self.compilation_database)
         
         self.target_watcher = notify.TargetWatcher()
         

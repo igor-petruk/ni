@@ -2,8 +2,6 @@ import os.path
 
 import logging
 
-logging.basicConfig(level=logging.INFO) 
-
 CONF_NAME="ni.py"
 ROOT_ENV_VAR="NIH_PROJECT_ROOT"
 
