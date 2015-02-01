@@ -26,9 +26,12 @@ class ModuleDefinition(object):
         return self.env
 
 class Evaluator(object):
-    
+    def __init__(self, configuration):
+        self._moddef_filename = configuration.Get(
+                "general","module_definition_filename")
+
     def GetModuleDefinitionForPath(self, path):
-        return os.path.join(path, common.CONF_NAME)
+        return os.path.join(path, self._moddef_filename)
 
     def RefreshModuleDefinition(self, target):
         if not target.Exists():

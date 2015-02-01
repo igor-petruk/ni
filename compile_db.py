@@ -1,11 +1,10 @@
-import common
-
 import os
 import json
 import logging
 
 class DbEntry(object):
-    def __init__(self, command, file_path):
+    def __init__(self, root, command, file_path):
+        self.root = root
         self.command = command
         self.file_path = file_path
     
@@ -19,7 +18,7 @@ class DbEntryEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, DbEntry):
             db_entry_dict = {
-                "directory": common.GetRootFromEnv(),
+                "directory": obj.root,
                 "command": obj.command,
                 "file": obj.file_path
             }
@@ -28,13 +27,14 @@ class DbEntryEncoder(json.JSONEncoder):
 
 def DbEntryDecoder(dct):
     if "file" in dct:
-        return DbEntry(dct["command"], dct["file"])
+        return DbEntry(dct["directory"], dct["command"], dct["file"])
     return dct
 
 class Database(object):
-    def __init__(self):
+    def __init__(self, configuration):
+        self._root = configuration.GetExpandedDir("projects","root_dir")
         self._compile_commands_file_path = os.path.join(
-                common.GetRootFromEnv(), "compile_commands.json")
+                self._root, "compile_commands.json")
         self._database = {}
         self._LoadDatabase()
 
@@ -61,7 +61,7 @@ class Database(object):
         self._database = new_database
 
     def SubmitCommand(self, file_name, command):
-        self._database[file_name] = DbEntry(command, file_name)
+        self._database[file_name] = DbEntry(self._root, command, file_name)
 
     def Write(self):
         self._CleanFromNonExisting()

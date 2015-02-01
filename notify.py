@@ -1,7 +1,6 @@
 from pyinotify import EventsCodes, ProcessEvent, ThreadedNotifier, WatchManager
 import os
 import functools
-import common
 import logging
 import collections
 import threading
@@ -9,7 +8,10 @@ import time
 import queue
 
 class TargetWatcher(object):
-    def __init__(self):
+    def __init__(self, configuration):
+        self._root = configuration.GetExpandedDir("projects", "root_dir")
+        self._moddef_filename = configuration.Get(
+                "general", "module_definition_filename")
         self.wm = WatchManager()
         
         self.watched = {}
@@ -29,7 +31,7 @@ class TargetWatcher(object):
         self.notifier = ThreadedNotifier(self.wm, handler)
         self.notifier.start()
         self.watch = self.wm.add_watch(
-                common.GetRootFromEnv(), mask, rec=True, auto_add=True)
+                self._root, mask, rec=True, auto_add=True)
         self.modification_handlers = []
     
     def _GetAllModuleDefinitionsForTarget(self, target_name):
@@ -49,11 +51,11 @@ class TargetWatcher(object):
     def ProcessEventsBatch(self, batch):
         modified_targets = set()
         modified_module_definitions = set()
-        root_prefix_len = len(common.GetRootFromEnv())
+        root_prefix_len = len(self._root)
         for event in batch:
             rel_path = event.pathname[root_prefix_len+1:]
-            if rel_path.endswith(common.CONF_NAME):
-                conf_dir = rel_path[:-len(common.CONF_NAME)-1]
+            if rel_path.endswith(self._moddef_filename):
+                conf_dir = rel_path[:-len(self._moddef_filename)-1]
                 modified_module_definitions.update(
                         self.watched_module_definitions[conf_dir])
             else:

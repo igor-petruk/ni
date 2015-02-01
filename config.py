@@ -13,19 +13,22 @@ class Configuration(object):
             self.config = None
 
         
-    def Get(self, section, key):
+    def Get(self, section, key, raise_exception=True, default=None):
         if not self.config:
-            raise KeyError(
-                "Section '[%s]', Key '%s' is not specified in configs" % (section, key))
+            if raise_exception:
+                raise KeyError(
+                    "Section '[%s]', Key '%s' is not "
+                    "specified in configs" % (section, key))
+            else:
+                return default
         if (section in self.config) and (key in self.config[section]):
             return self.config[section][key]
         else:
             return self.next_configuration.Get(section, key)
 
-    def GetOrDefault(self, section, key, default=None):
-        try:
-            return self.Get(section, key)
-        except KeyError:
-            return default
-
-
+    def GetExpandedDir(self, *args, **kwargs):
+        result = self.Get(*args, **kwargs)
+        if result:
+            return os.path.expanduser(result)
+        else:
+            return result

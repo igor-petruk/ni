@@ -5,7 +5,9 @@ import logging
 import time
 
 class Manager(object):
-    def __init__(self, graph, target_watcher, build_tracker, module_definition_evaluator):
+    def __init__(self, configuration, graph, target_watcher, build_tracker,
+            module_definition_evaluator):
+        self.configuration = configuration
         self.graph = graph
         self.target_watcher = target_watcher
         self.build_tracker = build_tracker
@@ -59,7 +61,9 @@ class Manager(object):
                 time.time() - started_build)
 
     def _LoadTarget(self, target_name):
-        target = common.Target(target_name)
+        target = common.Target(
+                    self.configuration.GetExpandedDir("projects","root_dir"),
+                    target_name)
         self.module_definition_evaluator.RefreshModuleDefinition(target)
         return target
 

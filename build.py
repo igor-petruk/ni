@@ -1,4 +1,3 @@
-import common
 import logging
 import os
 import glob
@@ -13,10 +12,10 @@ class BuildingContext(object):
 
 
 class Builder(object):
-    def __init__(self, targets_state):
+    def __init__(self, configuration, targets_state):
         self.targets_state = targets_state
         self.build_results = {}
-        self.root = common.GetRootFromEnv()
+        self.root = configuration.GetExpandedDir("projects", "root_dir")
         self.builders = {}
 
     def RegisterBuilder(self, mode, builder):

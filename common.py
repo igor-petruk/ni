@@ -2,19 +2,13 @@ import os.path
 
 import logging
 
-CONF_NAME="ni.py"
-ROOT_ENV_VAR="NIH_PROJECT_ROOT"
-
 class Error(Exception):
     pass
 
-def GetRootFromEnv():
-    return os.path.expanduser(os.environ[ROOT_ENV_VAR])
-
 class Target(object):
-    def __init__(self, name):
+    def __init__(self, root_dir, name):
         self._name = name
-        self._root = GetRootFromEnv()
+        self._root = root_dir
         self._module_definition = None
 
     def SetModuleDefinition(self, module_definition):

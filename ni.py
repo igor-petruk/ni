@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
 import functools
+import logging
 
+import config
 import moduledef
 import build
 import notify
@@ -9,7 +11,6 @@ import manager
 import graph
 import compile_db
 import cpp
-import logging
 import pkg_config
 
 class App(object):
@@ -18,26 +19,30 @@ class App(object):
         LOGGING_FORMAT = "[%(filename)s:%(lineno)s] %(message)s"
         logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
         
+        self.configuration = config.Configuration(
+                ["~/.config/ni/settings.ini", "/etc/ni/settings.ini"])
+
         self.pkg_config = pkg_config.PkgConfig()
 
         self.graph = graph.DependencyTracker(
                 lambda deps: self.manager.GetDependencies(deps))
         
-        self.compilation_database = compile_db.Database()
+        self.compilation_database = compile_db.Database(self.configuration)
         
         self.targets_state = build.TargetsState()
 
-        self.builder = build.Builder(self.targets_state)
+        self.builder = build.Builder(self.configuration, self.targets_state)
 
         self.build_tracker = build.BuildTracker(
                 self.graph, self.targets_state, self.builder,
                 self.compilation_database)
         
-        self.target_watcher = notify.TargetWatcher()
+        self.target_watcher = notify.TargetWatcher(self.configuration)
         
-        self.module_definition_evaluator = moduledef.Evaluator()
+        self.module_definition_evaluator = moduledef.Evaluator(self.configuration)
 
         self.manager = manager.Manager(
+                self.configuration,
                 self.graph,
                 self.target_watcher,
                 self.build_tracker,
