@@ -34,6 +34,10 @@ class Builder(object):
         result = builder.Build(context, target_name)
         logging.info("Result for %s: %s", target_name, result)
         self.build_results[target_name] = result
+        logging.info("All results: %s", self.build_results)
+    
+    def GetBuildResult(self, target_name):
+        return self.build_results[target_name]
 
 class TargetsState(object):
     def __init__(self):
@@ -48,6 +52,9 @@ class BuildTracker(object):
         self.graph = graph
         self.builder = builder
         self.compilation_database = compilation_database
+
+    def GetBuildResult(self, target_name):
+        return self.builder.GetBuildResult(target_name)
 
     def AddTarget(self, target):
         self.targets_state.targets[target.GetName()] = target

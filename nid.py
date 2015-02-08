@@ -13,6 +13,7 @@ import compile_db
 import cpp
 import pkg_config
 import thread_pools
+import dbusinterface
 
 class App(object):
 
@@ -55,6 +56,9 @@ class App(object):
                 self.compilation_database, self.pkg_config, self.threading_manager)
         self.cpp_binary_builder = cpp.CppBinaryBuilder(
                 self.compilation_database, self.pkg_config, self.threading_manager)
+        
+        self.dbus_interface = dbusinterface.DBusInterface(
+                self.manager, self.threading_manager)
 
         # Post init
         self.graph.AddTrackedHandler(
@@ -74,8 +78,7 @@ class App(object):
                 functools.partial(manager.Manager.OnModifiedFiles, self.manager))
     
     def Run(self):
-        self.manager.AddActiveTarget("mathapp/main")
-        self.manager.Join()
+        self.dbus_interface.Run()
 
 app = App()
 app.Run()

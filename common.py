@@ -2,6 +2,31 @@ import os.path
 
 import logging
 
+class SuccessfulBuildResult(object):
+    def ok(self):
+        return True
+
+class FailedBuildResult(object):
+    def __init__(self, error_msg, causes=[]):
+        self.msg = error_msg
+        self.causes = causes
+        logging.info("Failed %s %s", error_msg, causes)
+
+    def ok(self):
+        return False
+
+    def GetErrorMessage(self, indent=""):
+        if not self.causes:
+            return indent+self.msg
+        else:
+            causes_msg = [i.GetErrorMessage().replace("\n","\n "+indent)
+                    for i in self.causes]
+            return "%s%s, because\n%s" % (indent, self.msg,
+                                          "\n".join(causes_msg))
+    
+    def __str__(self):
+        return "FailedBuildResult(%s)" % self.GetErrorMessage()
+
 class Error(Exception):
     pass
 

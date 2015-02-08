@@ -3,9 +3,9 @@ import os
 import subprocess
 import glob
 import utils
+import common
 
-
-class CppStaticLibrary(object):
+class CppStaticLibrary(common.SuccessfulBuildResult):
     def __init__(self, archive_path, lflags, pkg_deps):
         self.archive_path = archive_path
         self.lflags = lflags
@@ -14,7 +14,7 @@ class CppStaticLibrary(object):
     def __repr__(self):
         return "lib(%s, %s, %s)" % (self.archive_path, self.lflags, self.pkg_deps)
 
-class CppStaticBinary(object):
+class CppStaticBinary(common.SuccessfulBuildResult):
     def __init__(self, binary_path):
         self.binary_path = binary_path
 
@@ -45,7 +45,7 @@ class CppStaticLibraryBuilder(object):
         
         output_files = []
         executor = self.threading_manager.GetThreadPool("modules")
-        futures = []
+        futures = {}
         for source in sources:
             args = []
             args.extend(["clang++"])
@@ -61,10 +61,19 @@ class CppStaticLibraryBuilder(object):
             args.extend(["-o", output_file])
             self.compilation_database.SubmitCommand(source, " ".join(args))
             result = executor.submit(utils.RunProcess, args)
-            futures.append(result)
-        for future in futures:
-            future.result()
-        if output_files:
+            futures[source] = result
+        
+        errors = []
+
+        for source, future in futures.items():
+            result, out, err = future.result()
+            if result != 0:
+                errors.append(common.FailedBuildResult(err.decode()))
+        
+        if errors:
+            return [common.FailedBuildResult("Cannot build "+target.GetName(),
+                    errors)]
+        elif output_files:
             module_parent_dir = os.path.dirname(
                     os.path.join(target.GetOutDir(), target.GetName()))
             if not os.path.exists(module_parent_dir):
@@ -93,6 +102,7 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
     def Build(self, context, target_name):
         self_result = super(CppBinaryBuilder, self).Build(
                 context, target_name)
+
         deps = self_result
 
         target = context.targets[target_name]
@@ -102,6 +112,16 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
         logging.info("Collected deps for %s: %s", target_name, deps)
         binary_name = os.path.join(
                 target.GetOutDir(), target.GetName())
+
+        dep_errors = []
+        for dep in deps:
+            if not dep.ok():
+                dep_errors.append(dep)
+
+        if dep_errors:
+            return [common.FailedBuildResult("Cannot build "+target.GetName(),
+                    dep_errors)]
+
         args = []
         args.extend(["clang++"])
         pkg_deps = set()
@@ -112,7 +132,7 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
         args.extend(self.pkg_config.GetFlags(tuple(pkg_deps), libs=True))
         args.extend(["-o", binary_name])
         utils.RunProcess(args)
-        return CppStaticBinary(binary_name)
+        return [CppStaticBinary(binary_name)]
 
     def _FillDependencies(self, context, target_name, deps):
         logging.info("Fill %r %r", context.build_results, deps)
