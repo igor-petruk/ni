@@ -14,9 +14,12 @@ class CppStaticLibrary(common.SuccessfulBuildResult):
     def __repr__(self):
         return "lib(%s, %s, %s)" % (self.archive_path, self.lflags, self.pkg_deps)
 
-class CppStaticBinary(common.SuccessfulBuildResult):
+class CppStaticBinary(common.SuccessfulBuildResult, common.ExecutableBuildResult):
     def __init__(self, binary_path):
         self.binary_path = binary_path
+    
+    def GetExecutablePath(self):
+        return self.binary_path
 
     def __repr__(self):
         return "bin(%s)" % (self.binary_path,)

@@ -58,7 +58,7 @@ class App(object):
                 self.compilation_database, self.pkg_config, self.threading_manager)
         
         self.dbus_interface = dbusinterface.DBusInterface(
-                self.manager, self.threading_manager)
+                self.configuration, self.manager, self.threading_manager)
 
         # Post init
         self.graph.AddTrackedHandler(

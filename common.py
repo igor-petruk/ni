@@ -2,6 +2,12 @@ import os.path
 
 import logging
 
+
+class ExecutableBuildResult(object):
+    def GetExecutablePath(self):
+        raise NotImplemented()
+
+
 class SuccessfulBuildResult(object):
     def ok(self):
         return True

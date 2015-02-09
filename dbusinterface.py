@@ -1,24 +1,13 @@
 #!/usr/bin/python
 
-# import collections
-# import glob
-# import hashlib
-# import json
-# import os
-# import re
-# import subprocess
-# import sys
-# import tempfile
-# import functools
-# import threading
-# from time import sleep
-# import random
-#
-
 import logging
 
+import common
+import dbus
 import dbus.service
 import dbus.mainloop.glib
+import glob
+import os
 
 from gi.repository import Gio, GObject
 
@@ -30,10 +19,14 @@ APP_SVC_PATH="/com/nid/Builder"
 class CommandError(dbus.DBusException):
     pass
 
+OK = {
+    "status": "ok"
+}
 
 class DBusInterface(dbus.service.Object):
 
-    def __init__(self, manager, threading_manager):
+    def __init__(self, configuration, manager, threading_manager):
+        self._root = configuration.GetExpandedDir("projects", "root_dir")
         self.manager = manager
         self.threading_manager = threading_manager
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -68,7 +61,7 @@ class DBusInterface(dbus.service.Object):
     def AddTarget(self, target_name, reply_handler, error_handler):
         def Body():
             self.manager.AddActiveTarget(str(target_name))
-            return "ok"
+            return OK
         self._Execute(Body, reply_handler, error_handler)
 
     @dbus.service.method(dbus_interface=APP_SVC_NAME,
@@ -78,13 +71,17 @@ class DBusInterface(dbus.service.Object):
         def Body():
             build_results = self.manager.BuildTarget(str(target_name))
             broken = []
+            executables = dbus.Array(signature="s")
             for build_result in build_results:
                 if not build_result.ok():
                     broken.append(build_result)
+                elif isinstance(build_result, common.ExecutableBuildResult):
+                    executables.append(dbus.String(build_result.GetExecutablePath()))
             if not broken:
-                return {
-                    "status": "ok"
-                }
+                return dbus.Dictionary({
+                    "status": "ok",
+                    "executables": executables,
+                }, signature="sv")
             else:
                 return {
                     "status": "failure",
@@ -98,10 +95,40 @@ class DBusInterface(dbus.service.Object):
     def RemoveTarget(self, target_name, reply_handler, error_handler):
         def Body():
             self.manager.RemoveActiveTarget(str(target_name))
-            return "ok"
+            return OK
         self._Execute(Body, reply_handler, error_handler)
     
+    @dbus.service.method(dbus_interface=APP_SVC_NAME,
+                         in_signature="s",
+                         async_callbacks=("reply_handler", "error_handler"))
+    def Complete(self, prefix, reply_handler, error_handler):
+        def Body():
+            result = dbus.Array(signature="s")
+            
+            def Walk(relative):
+                full = os.path.join(self._root, relative)
+                logging.info("Walking '%s'", full)
+                result.append(relative)
+                for _, dirs, _ in os.walk(full):
+                    for dir_name in dirs:
+                        Walk(os.path.join(relative, dir_name))
 
+            glob_expr = os.path.join(self._root, prefix)+"*"
+            logging.info("Completing for glob prefix '%s'", glob_expr)
+            for full_filename in glob.glob(glob_expr):
+                if not os.path.isdir(full_filename):
+                    continue
+                relative = full_filename[(len(self._root)+1):]
+                first_path = relative.split("/")
+                if first_path[0] in set(["out","obj"]):
+                    continue
+                Walk(relative)
+
+            return dbus.Dictionary({
+                "status": "ok",
+                "completions": result,
+            }, signature="sv")
+        self._Execute(Body, reply_handler, error_handler)
 
     def Run(self):
         GObject.MainLoop().run()
