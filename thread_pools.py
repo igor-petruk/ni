@@ -27,4 +27,4 @@ class ThreadingManager(object):
         for tp_name, tp in self.thread_pools.items():
             logging.info("Shutting down thread pool '%s'", name)
             tp.Shutdonw()
-
+        

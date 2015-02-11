@@ -27,9 +27,9 @@ class TargetWatcher(object):
         self.events_queue = queue.Queue()
 
         self.acc_thread = threading.Thread(target=functools.partial(
-            TargetWatcher.AccumulationThreadProc, self))
+            TargetWatcher.AccumulationThreadProc, self), daemon=True)
         self.acc_thread.start()
-
+        
         self.notifier = ThreadedNotifier(self.wm, handler)
         self.notifier.start()
         self.watch = self.wm.add_watch(
@@ -88,8 +88,7 @@ class TargetWatcher(object):
                 event_buffer = []
 
     def Join(self):
-        self.notifier.join()
-        self.acc_thread.join()
+        self.notifier.stop()
 
     def ProcessEvent(self, event):
         self.events_queue.put(event)

@@ -79,6 +79,9 @@ class App(object):
     
     def Run(self):
         self.dbus_interface.Run()
+        logging.info("Interrupted, shutting down...")
+        self.threading_manager.Join()
+        self.target_watcher.Join()
 
 app = App()
 app.Run()

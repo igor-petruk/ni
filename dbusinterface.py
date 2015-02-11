@@ -131,7 +131,13 @@ class DBusInterface(dbus.service.Object):
         self._Execute(Body, reply_handler, error_handler)
 
     def Run(self):
-        GObject.MainLoop().run()
-
+        main_loop = GObject.MainLoop()
+        first = True
+        while first or main_loop.is_running():
+            first = False
+            try:    
+                main_loop.run()
+            except KeyboardInterrupt:
+                main_loop.quit()
 
 
