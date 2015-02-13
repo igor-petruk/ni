@@ -25,6 +25,6 @@ class ThreadingManager(object):
 
     def Join(self):
         for tp_name, tp in self.thread_pools.items():
-            logging.info("Shutting down thread pool '%s'", name)
+            logging.info("Shutting down thread pool '%s'", tp_name)
             tp.Shutdonw()
         
