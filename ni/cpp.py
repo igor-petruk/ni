@@ -2,8 +2,8 @@ import logging
 import os
 import subprocess
 import glob
-import utils
-import common
+
+from ni import common, utils
 
 class CppStaticLibrary(common.SuccessfulBuildResult):
     def __init__(self, archive_path, lflags, pkg_deps):

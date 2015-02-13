@@ -8,11 +8,6 @@ import os
 LOGGING_FORMAT = "[%(filename)s:%(lineno)s] %(message)s"
 logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
 
-bus = dbus.SessionBus()
-proxy = bus.get_object(
-    'com.nid.Builder',
-    '/com/nid/Builder')
-
 def ReportIfError(result):
     if result["status"] != "ok":
         print(str(result["msg"]))
@@ -20,10 +15,10 @@ def ReportIfError(result):
     else:
         return result
 
-def HandleBuild(argv):
+def HandleBuild(proxy, argv):
     ReportIfError(proxy.BuildTarget(argv[0]))
 
-def HandleRun(argv):
+def HandleRun(proxy, argv):
     result = ReportIfError(proxy.BuildTarget(argv[0]))
     executables = [str(e) for e in result["executables"]]
     if len(executables) == 0:
@@ -36,13 +31,13 @@ def HandleRun(argv):
         executable = executables[0]
         os.execv(executable, argv)
 
-def HandleAdd(argv):
+def HandleAdd(proxy, argv):
     ReportIfError(proxy.AddTarget(argv[0]))
 
-def HandleRemove(argv):
+def HandleRemove(proxy, argv):
     ReportIfError(proxy.RemoveTarget(argv[0]))
 
-def HandleComplete(argv):
+def HandleComplete(proxy, argv):
     result = ReportIfError(proxy.Complete(argv[1]))
     for completion in result["completions"]:
         print(str(completion))
@@ -55,14 +50,19 @@ commands = {
     "complete": HandleComplete,
 }
 
-command = sys.argv[1]
-argv = sys.argv[2:]
+def RunCommandLineTool(argv):
+    command = argv[1]
+    command_argv = argv[2:]
 
-if command in commands:
-    commands[command](argv)
-    sys.exit(0)
-else:
-    print("Not supported command '%s'. Supported are %s" % (
-        command, sorted(commands.keys())))
-    sys.exit(1)
+    if command in commands:
+        bus = dbus.SessionBus()
+        proxy = bus.get_object(
+            'com.nid.Builder',
+            '/com/nid/Builder')
+        return commands[command](proxy, command_argv)
+        sys.exit(0)
+    else:
+        print("Not supported command '%s'. Supported are %s" % (
+            command, sorted(commands.keys())))
+        sys.exit(1)
     

@@ -1,21 +1,10 @@
-#!/usr/bin/python
-
 import functools
 import logging
 
-import config
-import moduledef
-import build
-import notify
-import manager
-import graph
-import compile_db
-import cpp
-import pkg_config
-import thread_pools
-import dbusinterface
+from ni import config, thread_pools, pkg_config, graph
+from ni import compile_db, build, notify, moduledef, manager, cpp, dbusinterface
 
-class App(object):
+class Server(object):
 
     def __init__(self):
         LOGGING_FORMAT = "[%(filename)s:%(lineno)s] %(message)s"
@@ -83,5 +72,3 @@ class App(object):
         self.threading_manager.Join()
         self.target_watcher.Join()
 
-app = App()
-app.Run()

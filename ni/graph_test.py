@@ -1,7 +1,6 @@
 import unittest
 
-import common
-import graph
+from ni import common, graph
 import functools
 import logging
 

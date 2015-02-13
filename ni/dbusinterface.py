@@ -2,7 +2,6 @@
 
 import logging
 
-import common
 import dbus
 import dbus.service
 import dbus.mainloop.glib
@@ -10,6 +9,8 @@ import glob
 import os
 
 from gi.repository import Gio, GObject
+
+from ni import common
 
 APP_NAME="nihd"
 

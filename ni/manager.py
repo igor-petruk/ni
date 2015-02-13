@@ -1,6 +1,6 @@
 import os
 
-import common
+from ni import common
 import logging
 import time
 import threading

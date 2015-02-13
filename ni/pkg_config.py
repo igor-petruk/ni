@@ -1,4 +1,4 @@
-import utils
+from ni import utils
 
 
 class PkgConfig(object):

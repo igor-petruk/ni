@@ -1,4 +1,4 @@
-import common
+from ni import common
 
 import logging
 import os
