@@ -10,7 +10,7 @@ import os
 
 from gi.repository import Gio, GObject
 
-from ni import common
+from nibt import common
 
 APP_NAME="nihd"
 

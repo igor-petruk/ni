@@ -3,7 +3,7 @@ import os
 import subprocess
 import glob
 
-from ni import common, utils
+from nibt import common, utils
 
 class CppStaticLibrary(common.SuccessfulBuildResult):
     def __init__(self, archive_path, lflags, pkg_deps):

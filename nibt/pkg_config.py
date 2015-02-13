@@ -1,4 +1,4 @@
-from ni import utils
+from nibt import utils
 
 
 class PkgConfig(object):

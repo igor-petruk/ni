@@ -1,8 +1,8 @@
 import functools
 import logging
 
-from ni import config, thread_pools, pkg_config, graph
-from ni import compile_db, build, notify, moduledef, manager, cpp, dbusinterface
+from nibt import config, thread_pools, pkg_config, graph
+from nibt import compile_db, build, notify, moduledef, manager, cpp, dbusinterface
 
 class Server(object):
 

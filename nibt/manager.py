@@ -1,6 +1,6 @@
 import os
 
-from ni import common
+from nibt import common
 import logging
 import time
 import threading

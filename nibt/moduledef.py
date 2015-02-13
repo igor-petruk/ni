@@ -1,4 +1,4 @@
-from ni import common
+from nibt import common
 
 import logging
 import os
