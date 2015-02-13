@@ -50,9 +50,9 @@ commands = {
     "complete": HandleComplete,
 }
 
-def RunCommandLineTool(argv):
-    command = argv[1]
-    command_argv = argv[2:]
+def Main():
+    command = sys.argv[1]
+    command_argv = sys.argv[2:]
 
     if command in commands:
         bus = dbus.SessionBus()

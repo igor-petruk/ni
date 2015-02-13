@@ -72,3 +72,6 @@ class Server(object):
         self.threading_manager.Join()
         self.target_watcher.Join()
 
+def Main():
+    s = Server()
+    s.Run()

@@ -1,6 +1,0 @@
-#!/usr/bin/python
-
-from nibt import server
-
-s = server.Server()
-s.Run()
