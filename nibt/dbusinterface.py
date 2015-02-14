@@ -132,6 +132,7 @@ class DBusInterface(dbus.service.Object):
         self._Execute(Body, reply_handler, error_handler)
 
     def Run(self):
+        logging.info("Running DBus service...")
         main_loop = GObject.MainLoop()
         first = True
         while first or main_loop.is_running():

@@ -1,7 +1,7 @@
 import functools
 import logging
 
-from nibt import config, thread_pools, pkg_config, graph
+from nibt import config, thread_pools, pkg_config, graph, web
 from nibt import compile_db, build, notify, moduledef, manager, cpp, dbusinterface
 
 class Server(object):
@@ -48,6 +48,8 @@ class Server(object):
         
         self.dbus_interface = dbusinterface.DBusInterface(
                 self.configuration, self.manager, self.threading_manager)
+        
+        self.web = web.WebUIServer()
 
         # Post init
         self.graph.AddTrackedHandler(
@@ -67,6 +69,7 @@ class Server(object):
                 functools.partial(manager.Manager.OnModifiedFiles, self.manager))
     
     def Run(self):
+        self.web.Start()
         self.dbus_interface.Run()
         logging.info("Interrupted, shutting down...")
         self.threading_manager.Join()
