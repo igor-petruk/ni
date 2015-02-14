@@ -2,6 +2,7 @@ import pkg_resources
 
 import logging
 
+import aiohttp
 import asyncio
 from aiohttp import web
 import os.path
@@ -16,7 +17,8 @@ class WebUIServer(object):
         self.app = web.Application()
         self.app.router.add_route("GET", "/ws", self.WebSocket)
         self.app.router.add_route("GET", r"/{path:.*}", self.ServeResources)
-    
+        self.websockets = set()
+
     def Run(self):
         host = "127.0.0.1"
         port = 8787
@@ -35,9 +37,11 @@ class WebUIServer(object):
  
     @asyncio.coroutine
     def WebSocket(self, request):
-
+        peername = request.transport.get_extra_info('peername') 
         ws = web.WebSocketResponse()
+        logging.info("WebSocket client connected: %s", peername)
         ws.start(request)
+        self.websockets.add(ws)
 
         while True:
             try:
@@ -45,9 +49,14 @@ class WebUIServer(object):
                 if data == 'close':
                     ws.close()
                 else:
-                    ws.send_str(data + '/answer')
-            except web.WebSocketDisconnectedError as exc:
-                print(exc.code, exc.message)
+                    for other_ws in self.websockets:
+                        try:
+                            other_ws.send_str(data + '/answer')
+                        except RuntimeError as e:
+                            pass
+            except aiohttp.errors.WSClientDisconnectedError as exc:
+                logging.info("WebSocket client disconnected: %s", peername)
+                self.websockets.remove(ws)
                 return ws
 
     @asyncio.coroutine
