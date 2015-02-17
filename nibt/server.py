@@ -49,7 +49,10 @@ class Server(object):
         self.dbus_interface = dbusinterface.DBusInterface(
                 self.configuration, self.manager, self.threading_manager)
         
-        self.web = web.WebUIServer()
+        self.tracked_target_state_emitter = web.TrackedTargetsStateEmitter(self.graph)
+        self.build_progress_state_emitter = web.BuildProcessStateEmitter(self.builder)
+
+        self.web = web.WebUIServer([self.tracked_target_state_emitter, self.build_progress_state_emitter])
 
         # Post init
         self.graph.AddTrackedHandler(

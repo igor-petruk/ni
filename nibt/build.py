@@ -16,6 +16,14 @@ class Builder(object):
         self.build_results = {}
         self.root = configuration.GetExpandedDir("projects", "root_dir")
         self.builders = {}
+        self.build_start_handlers = []
+        self.build_finish_handlers = []
+    
+    def AddBuildStartHandler(self, handler):
+        self.build_start_handlers.append(handler)
+
+    def AddBuildFinishHandler(self, handler):
+        self.build_finish_handlers.append(handler)
 
     def RegisterBuilder(self, mode, builder):
         self.builders[mode] = builder
@@ -30,8 +38,13 @@ class Builder(object):
         
         context = BuildingContext(self.targets_state.targets,
                 self.build_results, env["mode"])
-
+        
+        for start_handler in self.build_start_handlers:
+            start_handler(target_name)
         result = builder.Build(context, target_name)
+        for finish_handler in self.build_finish_handlers:
+            finish_handler(target_name, result)
+
         logging.info("Result for %s: %s", target_name, result)
         self.build_results[target_name] = result
         logging.info("All results: %s", self.build_results)

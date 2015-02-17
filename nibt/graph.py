@@ -22,6 +22,9 @@ class DependencyTracker(object):
     
     def GetDependencies(self, target_name):
         return self._depends[target_name]
+    
+    def GetAllDependencies(self):
+        return self._depends
 
     def _LogEvent(self, message, item):
         logging.info(message, item)
