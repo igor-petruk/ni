@@ -1,0 +1,24 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+<polymer-element name="nibt-stream-consumer" attributes="streamId receiver">
+  <template>
+  </template>
+
+  <script>
+    Polymer({
+      receiver: '',
+      streamId: '',
+      ready: function(){
+        var r = document.querySelector("#"+this.receiver);
+        r.addEventListener(this.streamId+"-init", this.onInit.bind(this));
+        r.addEventListener(this.streamId+"-event", this.onEvent.bind(this));
+      },
+      onInit: function(e) {
+        this.fire("state-init", e.detail);
+      },
+      onEvent: function(e) {
+        this.fire("state-event", e.detail);
+      }
+    });
+  </script>
+</polymer-element>

@@ -48,7 +48,7 @@ class WebSocketStateEmitter(object):
 
 class TrackedTargetsStateEmitter(WebSocketStateEmitter):
     def __init__(self, graph):
-        WebSocketStateEmitter.__init__(self, "tracked_targets")
+        WebSocketStateEmitter.__init__(self, "track")
         self.graph = graph
         self.graph.AddTrackedHandler(self.OnTargetAdded)
         self.graph.AddUntrackedHandler(self.OnTargetRemoved)

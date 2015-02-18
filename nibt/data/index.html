@@ -4,10 +4,30 @@
         <meta charset="utf-8">
         <title>Hello World</title>
         <link rel="stylesheet" type="text/css" href="style.css">
+        <script src="bower_components/webcomponentsjs/webcomponents.js"></script>
+        <link rel="import" href="nibt-state-receiver.html"/>
+        <link rel="import" href="nibt-stream-consumer.html"/>
     </head>
-      <script src="app.js"></script>
+    <body> 
+     
+    <nibt-state-receiver id="sr" url="ws://localhost:8787/ws"> </nibt-state-receiver> 
 
-  Hello world 
+    <nibt-stream-consumer id="sc1" receiver="sr" streamId="track"> </nibt-stream-consumer>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function(){
+        var sc1 = document.querySelector("#sc1")
+        
+        sc1.addEventListener("state-init", function(e){
+          console.log("Got init "+JSON.stringify(e.detail));
+        });
+
+
+        sc1.addEventListener("state-event", function(e){
+          console.log("Got event "+JSON.stringify(e.detail));
+        });
+      }, false);
+    </script>
 
     </body>
 </html>
