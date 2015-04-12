@@ -31,13 +31,13 @@ class Builder(object):
     def Build(self, target_name):
         logging.info("Building %s", target_name)
         target = self.targets_state.targets[target_name]
-        env =  target.GetModuleDefinition().GetEnv()
-        builder = self.builders[env["mode"]]
+        definition =  target.GetModuleDefinition()
+        builder = self.builders[definition.mode]
 
-        logging.info("Picked %s for mode %s", builder, env["mode"])
+        logging.info("Picked %s for mode %s", builder, definition.mode)
         
         context = BuildingContext(self.targets_state.targets,
-                self.build_results, env["mode"])
+                self.build_results, definition.mode)
         
         for start_handler in self.build_start_handlers:
             start_handler(target_name)

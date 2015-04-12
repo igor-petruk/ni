@@ -61,9 +61,11 @@ class TargetWatcher(object):
                 modified_module_definitions.update(
                         self.watched_module_definitions[conf_dir])
             else:
-                conf_dir = rel_path[:-len(os.path.basename(rel_path))-1]
-                if conf_dir in self.watched:
-                    modified_targets.add(self.watched[conf_dir])
+                #TODO Use efficient search instead of linear scan across dict
+                for watched_key, watched_target in self.watched.items():
+                    if rel_path.startswith(watched_key):
+                        modified_targets.add(watched_target)
+                        break
                 
         if modified_module_definitions or modified_targets:
             self.ModificationsFound(modified_module_definitions, modified_targets)

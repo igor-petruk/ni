@@ -70,7 +70,7 @@ class Target(object):
         return os.path.join(self.GetRootDir(), "obj")
     
     def GetTargetObjDir(self):
-        return os.path.join(self.GetObjDir(), self.GetName())
+        return os.path.join(self.GetObjDir(), os.path.dirname(self.GetName()))
     
     def GetOutDir(self):
         return os.path.join(self.GetRootDir(), "out")

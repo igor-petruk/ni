@@ -32,11 +32,11 @@ class CppStaticLibraryBuilder(object):
     
     def Build(self, context, target_name):
         target = context.targets[target_name]
-        env = target.GetModuleDefinition().GetEnv()
-        logging.info("Env %s", env)
-        cflags = env["cflags"]
+        definition = target.GetModuleDefinition()
+        logging.info("Definition %s", definition)
+        cflags = definition.cflags
 
-        pkg_config_deps = env["pkg_config"]
+        pkg_config_deps = definition.pkg_config
         pkg_config_cflags = self.pkg_config.GetFlags(
                 tuple(pkg_config_deps), cflags=True)
         
@@ -91,15 +91,14 @@ class CppStaticLibraryBuilder(object):
             args.extend(output_files)
             utils.RunProcess(args)
             return [CppStaticLibrary(output_archive,
-                    env["lflags"], set(pkg_config_deps))]
+                    definition.lflags, set(pkg_config_deps))]
         else:
             return []
 
 
     def _ResolveSources(self, target):
         sources_dir = target.GetModuleDir()
-        sources = glob.glob(os.path.join(sources_dir, "*.cc"))
-        return sources
+        return [sources_dir + ".cc"]
 
 class CppBinaryBuilder(CppStaticLibraryBuilder):
     def Build(self, context, target_name):
@@ -109,8 +108,8 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
         deps = self_result
 
         target = context.targets[target_name]
-        env = target.GetModuleDefinition().GetEnv()
-        for dep_name in env["deps"]:
+        definition = target.GetModuleDefinition()
+        for dep_name in definition.deps:
             self._FillDependencies(context, dep_name, deps)
         logging.info("Collected deps for %s: %s", target_name, deps)
         binary_name = os.path.join(
@@ -135,14 +134,21 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
         args.extend(self.pkg_config.GetFlags(tuple(pkg_deps), libs=True))
         args.extend(["-o", binary_name])
         utils.RunProcess(args)
+
+        if definition.binary_name:
+            symlink_full_path = os.path.join(target.GetRootDir(), "bin", definition.binary_name)
+            logging.info("Symlinking %s to %s", binary_name, symlink_full_path)
+            os.makedirs(os.path.dirname(symlink_full_path))
+            os.symlink(binary_name, symlink_full_path)
+
         return [CppStaticBinary(binary_name)]
 
     def _FillDependencies(self, context, target_name, deps):
         logging.info("Fill %r %r", context.build_results, deps)
         if target_name in context.build_results:
             target = context.targets[target_name]
-            env = target.GetModuleDefinition().GetEnv()
-            for dep_name in env["deps"]:
+            definition = target.GetModuleDefinition()
+            for dep_name in definition.deps:
                 self._FillDependencies(context, dep_name, deps)
             result = context.build_results[target_name]
             deps.extend(result) 

@@ -79,6 +79,7 @@ class Manager(object):
         target = common.Target(
                     self.configuration.GetExpandedDir("projects","root_dir"),
                     target_name)
-        self.module_definition_evaluator.RefreshModuleDefinition(target)
+        modules = self.module_definition_evaluator.LoadModuleDefinition(os.path.dirname(target.GetName()))
+        target.SetModuleDefinition(modules.GetConfig(target.GetName()))
         return target
 
