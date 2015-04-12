@@ -1,6 +1,8 @@
 import functools
 import logging
 
+from pkg_resources import resource_stream
+
 from nibt import config, thread_pools, pkg_config, graph, web
 from nibt import compile_db, build, notify, moduledef, manager, cpp, dbusinterface
 
@@ -10,8 +12,10 @@ class Server(object):
         LOGGING_FORMAT = "[%(filename)s:%(lineno)s] %(message)s"
         logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
         
+        default_config = resource_stream(__name__, "default_settings.ini")
+        
         self.configuration = config.Configuration(
-                ["~/.config/ni/settings.ini", "/etc/ni/settings.ini"])
+                ["~/.config/ni/settings.ini", default_config])
         
         self.threading_manager = thread_pools.ThreadingManager(self.configuration)
 
