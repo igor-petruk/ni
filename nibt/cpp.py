@@ -138,8 +138,10 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
         if definition.binary_name:
             symlink_full_path = os.path.join(target.GetRootDir(), "bin", definition.binary_name)
             logging.info("Symlinking %s to %s", binary_name, symlink_full_path)
-            if not os.path.exists(os.path.dirname(symlink_full_path):
+            if not os.path.exists(os.path.dirname(symlink_full_path)):
                 os.makedirs(os.path.dirname(symlink_full_path))
+            if os.path.exists(symlink_full_path):
+                os.remove(symlink_full_path)
             os.symlink(binary_name, symlink_full_path)
 
         return [CppStaticBinary(binary_name)]

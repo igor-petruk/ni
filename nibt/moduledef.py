@@ -60,7 +60,9 @@ class ModuleEvaluationContext(object):
         }
     
     def PostProcess(self):
-        del self.env["__builtins__"]
+        b_key = "__builtins__"
+        if b_key in self.env:
+            del self.env[b_key]
         logging.info("Final module definition: %s", self.env)
 
     def GetEnv(self):
