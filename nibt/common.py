@@ -60,20 +60,3 @@ class Target(object):
     def __eq__(self, other):
         return self.GetName() == other.GetName()
 
-    def GetRootDir(self):
-        return self._root
-
-    def GetModuleDir(self):
-        return os.path.join(self.GetRootDir(), self.GetName())
-
-    def GetObjDir(self):
-        return os.path.join(self.GetRootDir(), "obj")
-    
-    def GetTargetObjDir(self):
-        return os.path.join(self.GetObjDir(), os.path.dirname(self.GetName()))
-    
-    def GetOutDir(self):
-        return os.path.join(self.GetRootDir(), "out")
-    
-    def Exists(self):
-        return os.path.exists(self.GetModuleDir())

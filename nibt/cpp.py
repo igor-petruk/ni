@@ -25,11 +25,12 @@ class CppStaticBinary(common.SuccessfulBuildResult, common.ExecutableBuildResult
         return "bin(%s)" % (self.binary_path,)
 
 class CppStaticLibraryBuilder(object):
-    def __init__(self, compilation_database, pkg_config, threading_manager):
+    def __init__(self, compilation_database, pkg_config, threading_manager, configuration):
         self.threading_manager = threading_manager
         self.compilation_database = compilation_database
         self.pkg_config = pkg_config
-    
+        self.root_dir = configuration.GetExpandedDir("projects","root_dir")
+
     def Build(self, context, target_name):
         target = context.targets[target_name]
         definition = target.GetModuleDefinition()
@@ -43,8 +44,10 @@ class CppStaticLibraryBuilder(object):
         sources = self._ResolveSources(target)
         logging.info("Sources %s", sources)
         
-        if not os.path.exists(target.GetTargetObjDir()):
-            os.makedirs(target.GetTargetObjDir())
+        obj_dir = os.path.join(self.root_dir, "obj", os.path.dirname(target.GetName())) 
+
+        if not os.path.exists(obj_dir):
+            os.makedirs(obj_dir)
         
         output_files = []
         executor = self.threading_manager.GetThreadPool("modules")
@@ -54,11 +57,11 @@ class CppStaticLibraryBuilder(object):
             args.extend(["clang++"])
             args.extend(cflags)
             args.extend(pkg_config_cflags)
-            args.extend(["-I", target.GetRootDir()])
+            args.extend(["-I", self.root_dir])
             args.extend(["-c"])
             args.extend([source])
             output_file = os.path.join(
-                    target.GetTargetObjDir(),
+                    obj_dir,
                     os.path.basename(source)+".o")
             output_files.append(output_file)
             args.extend(["-o", output_file])
@@ -78,7 +81,7 @@ class CppStaticLibraryBuilder(object):
                     errors)]
         elif output_files:
             module_parent_dir = os.path.dirname(
-                    os.path.join(target.GetOutDir(), target.GetName()))
+                    os.path.join(self.root_dir, "out", target.GetName()))
             if not os.path.exists(module_parent_dir):
                 os.makedirs(module_parent_dir)
             output_archive = os.path.join(module_parent_dir,
@@ -97,8 +100,20 @@ class CppStaticLibraryBuilder(object):
 
 
     def _ResolveSources(self, target):
-        sources_dir = target.GetModuleDir()
-        return [sources_dir + ".cc"]
+        module_definition = target.GetModuleDefinition()
+        if module_definition.sources is None:
+            logging.info("Sources is None for %s, using defailt convention", target)
+            sources_prefix = os.path.join(self.root_dir, target.GetName())
+            return [sources_prefix + ".cc"]
+        else:
+            module_dir = os.path.dirname(os.path.join(self.root_dir, target.GetName()))
+            sources = []
+            for pattern in module_definition.sources:
+                full_pattern = os.path.join(module_dir, pattern)   
+                expanded = glob.glob(full_pattern)
+                logging.info("Sources pattern %s for %s expanded to %s", full_pattern, target, expanded) 
+                sources.extend(expanded)
+            return sources
 
 class CppBinaryBuilder(CppStaticLibraryBuilder):
     def Build(self, context, target_name):
@@ -113,7 +128,7 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
             self._FillDependencies(context, dep_name, deps)
         logging.info("Collected deps for %s: %s", target_name, deps)
         binary_name = os.path.join(
-                target.GetOutDir(), target.GetName())
+                self.root_dir, "out", target.GetName())
 
         dep_errors = []
         for dep in deps:
@@ -136,7 +151,7 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
         utils.RunProcess(args)
 
         if definition.binary_name:
-            symlink_full_path = os.path.join(target.GetRootDir(), "bin", definition.binary_name)
+            symlink_full_path = os.path.join(self.root_dir, "bin", definition.binary_name)
             logging.info("Symlinking %s to %s", binary_name, symlink_full_path)
             if not os.path.exists(os.path.dirname(symlink_full_path)):
                 os.makedirs(os.path.dirname(symlink_full_path))

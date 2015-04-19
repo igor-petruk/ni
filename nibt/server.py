@@ -46,9 +46,11 @@ class Server(object):
                 self.module_definition_evaluator)
         
         self.cpp_lib_builder = cpp.CppStaticLibraryBuilder(
-                self.compilation_database, self.pkg_config, self.threading_manager)
+                self.compilation_database, self.pkg_config, self.threading_manager,
+                self.configuration)
         self.cpp_binary_builder = cpp.CppBinaryBuilder(
-                self.compilation_database, self.pkg_config, self.threading_manager)
+                self.compilation_database, self.pkg_config, self.threading_manager,
+                self.configuration)
         
         self.dbus_interface = dbusinterface.DBusInterface(
                 self.configuration, self.manager, self.threading_manager)

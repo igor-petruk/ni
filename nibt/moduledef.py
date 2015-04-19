@@ -5,8 +5,10 @@ import os
 
 def _CopyListIfExists(source, destination, attr, default):
     new_val = default
-    if source is not None:
-        new_val = getattr(source, attr)[:]
+    if source is not None and hasattr(source, attr):
+        old_val = getattr(source, attr)
+        if old_val is not None:
+            new_val = getattr(source, attr)[:]
     setattr(destination, attr, new_val)
 
 def _CopyIfExists(source, destination, attr, default):
@@ -21,6 +23,7 @@ class ModuleDefinition(object):
         _CopyListIfExists(previous, self, "lflags", [])
         _CopyListIfExists(previous, self, "cflags", [])
         _CopyListIfExists(previous, self, "deps", [])
+        _CopyListIfExists(previous, self, "sources", None)
         _CopyIfExists(previous, self, "mode", "c++/default")
         _CopyIfExists(previous, self, "binary_name", None)
 
@@ -48,10 +51,6 @@ class ModuleDefinitionAccumulator(object):
 
 class ModuleEvaluationContext(object):
     def __init__(self, previous_common=None):
-        self.deps = []
-        self.cflags = []
-        self.lflags = []
-        self.pkg_config = []
         self.current_common = ModuleDefinition(previous_common)
         self.module_definition_accumulator = ModuleDefinitionAccumulator(self.current_common)
         self.env = {
