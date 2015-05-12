@@ -4,10 +4,9 @@ import glob
 import subprocess
 
 class BuildingContext(object):
-    def __init__(self, targets, build_results, mode):
+    def __init__(self, targets, build_results):
         self.build_results = build_results
         self.targets = targets
-        self.mode = mode
 
 
 class Builder(object):
@@ -32,12 +31,13 @@ class Builder(object):
         logging.info("Building %s", target_name)
         target = self.targets_state.targets[target_name]
         definition =  target.GetModuleDefinition()
+        logging.info("Building definition %s", definition)
         builder = self.builders[definition.mode]
 
         logging.info("Picked %s for mode %s", builder, definition.mode)
         
         context = BuildingContext(self.targets_state.targets,
-                self.build_results, definition.mode)
+                self.build_results)
         
         for start_handler in self.build_start_handlers:
             start_handler(target_name)

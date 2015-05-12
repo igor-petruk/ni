@@ -5,7 +5,7 @@ import glob
 
 from nibt import common, utils
 
-class CppStaticLibrary(common.SuccessfulBuildResult):
+class CppStaticLibraryResult(common.SuccessfulBuildResult):
     def __init__(self, archive_path, lflags, pkg_deps):
         self.archive_path = archive_path
         self.lflags = lflags
@@ -14,7 +14,7 @@ class CppStaticLibrary(common.SuccessfulBuildResult):
     def __repr__(self):
         return "lib(%s, %s, %s)" % (self.archive_path, self.lflags, self.pkg_deps)
 
-class CppStaticBinary(common.SuccessfulBuildResult, common.ExecutableBuildResult):
+class CppStaticBinaryResult(common.SuccessfulBuildResult, common.ExecutableBuildResult):
     def __init__(self, binary_path):
         self.binary_path = binary_path
     
@@ -93,7 +93,7 @@ class CppStaticLibraryBuilder(object):
             args.extend([output_archive])
             args.extend(output_files)
             utils.RunProcess(args)
-            return [CppStaticLibrary(output_archive,
+            return [CppStaticLibraryResult(output_archive,
                     definition.lflags, set(pkg_config_deps))]
         else:
             return []
@@ -117,11 +117,7 @@ class CppStaticLibraryBuilder(object):
 
 class CppBinaryBuilder(CppStaticLibraryBuilder):
     def Build(self, context, target_name):
-        self_result = super(CppBinaryBuilder, self).Build(
-                context, target_name)
-
-        deps = self_result
-
+        deps = []
         target = context.targets[target_name]
         definition = target.GetModuleDefinition()
         for dep_name in definition.deps:
@@ -159,7 +155,7 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
                 os.remove(symlink_full_path)
             os.symlink(binary_name, symlink_full_path)
 
-        return [CppStaticBinary(binary_name)]
+        return [CppStaticBinaryResult(binary_name)]
 
     def _FillDependencies(self, context, target_name, deps):
         logging.info("Fill %r %r", context.build_results, deps)

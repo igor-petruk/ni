@@ -37,12 +37,13 @@ class Error(Exception):
     pass
 
 class Target(object):
-    def __init__(self, root_dir, name):
+    def __init__(self, name):
+        logging.info("Created Target object %s", name)
         self._name = name
-        self._root = root_dir
         self._module_definition = None
 
     def SetModuleDefinition(self, module_definition):
+        logging.info("Setting moduledef or target %s: %s", self._name, module_definition)
         self._module_definition = module_definition
     
     def GetModuleDefinition(self):

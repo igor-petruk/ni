@@ -36,7 +36,9 @@ class Server(object):
         
         self.target_watcher = notify.TargetWatcher(self.configuration)
         
-        self.module_definition_evaluator = moduledef.Evaluator(self.configuration)
+        self.module_definition_evaluator = moduledef.Evaluator(
+                [moduledef.CppBinary, moduledef.CppLibrary],
+                self.configuration)
 
         self.manager = manager.Manager(
                 self.configuration,
@@ -70,7 +72,7 @@ class Server(object):
     
 
         self.build_tracker.builder.RegisterBuilder(
-                "c++/default", self.cpp_lib_builder)
+                "c++/library", self.cpp_lib_builder)
         self.build_tracker.builder.RegisterBuilder(
                 "c++/binary", self.cpp_binary_builder)
 

@@ -76,9 +76,7 @@ class Manager(object):
                     time.time() - started_build)
 
     def _LoadTarget(self, target_name):
-        target = common.Target(
-                    self.configuration.GetExpandedDir("projects","root_dir"),
-                    target_name)
+        target = common.Target(target_name)
         modules = self.module_definition_evaluator.LoadModuleDefinition(os.path.dirname(target.GetName()))
         target.SetModuleDefinition(modules.GetConfig(target.GetName()))
         return target
