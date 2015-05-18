@@ -3,7 +3,24 @@ import os
 import subprocess
 import glob
 
-from nibt import common, utils
+from nibt import common, moduledef, plugin, utils
+
+
+class CppLibrary(moduledef.ModuleDefinitionFactory):
+    builder = "nibt.cpp.CppStaticLibraryBuilder"
+    pkg_config = []
+    cflags = []
+    lflags = []
+    deps = []
+    sources = None
+
+
+class CppBinary(moduledef.ModuleDefinitionFactory):
+    builder = "nibt.cpp.CppBinaryBuilder"
+    pkg_config = []
+    lflags = []
+    deps = []
+    binary_name = None
 
 class CppStaticLibraryResult(common.SuccessfulBuildResult):
     def __init__(self, archive_path, lflags, pkg_deps):
@@ -167,3 +184,17 @@ class CppBinaryBuilder(CppStaticLibraryBuilder):
             result = context.build_results[target_name]
             deps.extend(result) 
 
+class CppPlugin(plugin.Plugin):
+    def GetTargets(self):
+        return [CppBinary, CppLibrary]
+
+    def RegisterBuilders(self, builder):
+        self.cpp_lib_builder = CppStaticLibraryBuilder(
+                self.compilation_database, self.pkg_config, self.threading_manager,
+                self.configuration)
+        self.cpp_binary_builder = CppBinaryBuilder(
+                self.compilation_database, self.pkg_config, self.threading_manager,
+                self.configuration)
+        
+        builder.RegisterBuilder(self.cpp_lib_builder)
+        builder.RegisterBuilder(self.cpp_binary_builder)

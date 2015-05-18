@@ -17,24 +17,27 @@ class Builder(object):
         self.builders = {}
         self.build_start_handlers = []
         self.build_finish_handlers = []
-    
+
     def AddBuildStartHandler(self, handler):
         self.build_start_handlers.append(handler)
 
     def AddBuildFinishHandler(self, handler):
         self.build_finish_handlers.append(handler)
 
-    def RegisterBuilder(self, mode, builder):
-        self.builders[mode] = builder
+    def RegisterBuilder(self, builder):
+        # Class must be in module
+        class_name = "%s.%s" % (builder.__class__.__module__, builder.__class__.__name__)
+        logging.info("Registering '%s'", class_name)
+        self.builders[class_name] = builder
 
     def Build(self, target_name):
         logging.info("Building %s", target_name)
         target = self.targets_state.targets[target_name]
         definition =  target.GetModuleDefinition()
         logging.info("Building definition %s", definition)
-        builder = self.builders[definition.mode]
+        builder = self.builders[definition.builder]
 
-        logging.info("Picked %s for mode %s", builder, definition.mode)
+        logging.info("Picked %s for id %s ", builder, definition.builder)
         
         context = BuildingContext(self.targets_state.targets,
                 self.build_results)

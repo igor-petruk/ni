@@ -36,8 +36,12 @@ class Server(object):
         
         self.target_watcher = notify.TargetWatcher(self.configuration)
         
+        self.cpp_plugin = cpp.CppPlugin(
+                self.compilation_database, self.pkg_config, self.threading_manager, self.configuration)
+        self.cpp_plugin.RegisterBuilders(self.builder)
+
         self.module_definition_evaluator = moduledef.Evaluator(
-                [moduledef.CppBinary, moduledef.CppLibrary],
+                self.cpp_plugin.GetTargets(),
                 self.configuration)
 
         self.manager = manager.Manager(
@@ -46,13 +50,6 @@ class Server(object):
                 self.target_watcher,
                 self.build_tracker,
                 self.module_definition_evaluator)
-        
-        self.cpp_lib_builder = cpp.CppStaticLibraryBuilder(
-                self.compilation_database, self.pkg_config, self.threading_manager,
-                self.configuration)
-        self.cpp_binary_builder = cpp.CppBinaryBuilder(
-                self.compilation_database, self.pkg_config, self.threading_manager,
-                self.configuration)
         
         self.dbus_interface = dbusinterface.DBusInterface(
                 self.configuration, self.manager, self.threading_manager)
@@ -70,11 +67,6 @@ class Server(object):
         self.graph.AddRefreshingHandler(
                 functools.partial(manager.Manager.OnRefreshedAsDependency, self.manager))
     
-
-        self.build_tracker.builder.RegisterBuilder(
-                "c++/library", self.cpp_lib_builder)
-        self.build_tracker.builder.RegisterBuilder(
-                "c++/binary", self.cpp_binary_builder)
 
         self.target_watcher.AddModificationHandler(
                 functools.partial(manager.Manager.OnModifiedFiles, self.manager))

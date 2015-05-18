@@ -23,23 +23,6 @@ class ModuleDefinitionFactory(object):
         return "%s%s" % (type(self).__name__, self.__dict__,)
 
 
-class CppLibrary(ModuleDefinitionFactory):
-    mode = "c++/library"
-    pkg_config = []
-    cflags = []
-    lflags = []
-    deps = []
-    sources = None
-
-
-class CppBinary(ModuleDefinitionFactory):
-    mode = "c++/binary"
-    pkg_config = []
-    lflags = []
-    deps = []
-    binary_name = None
-
-
 class ModuleDefinitionAccumulator(object):
     def __repr__(self):
         return "ModuleDefinitionAccumulator%s" % (self.__dict__,)
