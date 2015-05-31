@@ -47,6 +47,18 @@ class CppStaticLibraryBuilder(object):
         self.compilation_database = compilation_database
         self.pkg_config = pkg_config
         self.root_dir = configuration.GetExpandedDir("projects","root_dir")
+    
+    def GetWatchableSources(self, target):
+        sources = target.GetModuleDefinition().sources[:]
+        if sources is None:
+            sources = [target.GetName()+ext for ext in [".cc", ".cpp", ".c++"]]
+
+        no_ext_set = {os.path.splitext(source)[0] for source in sources}
+        
+        headers = [no_ext+ext for ext in [".h", ".hpp"] for no_ext in no_ext_set]
+        
+        sources.extend(headers)
+        return sources
 
     def Build(self, context, target_name):
         target = context.targets[target_name]
@@ -128,11 +140,16 @@ class CppStaticLibraryBuilder(object):
             for pattern in module_definition.sources:
                 full_pattern = os.path.join(module_dir, pattern)   
                 expanded = glob.glob(full_pattern)
-                logging.info("Sources pattern %s for %s expanded to %s", full_pattern, target, expanded) 
+                logging.info("Sources pattern %s for %s expanded to %s",
+                             full_pattern, target, expanded) 
                 sources.extend(expanded)
             return sources
 
 class CppBinaryBuilder(CppStaticLibraryBuilder):
+    
+    def GetWatchableSources(self, target):
+        return []
+    
     def Build(self, context, target_name):
         deps = []
         target = context.targets[target_name]

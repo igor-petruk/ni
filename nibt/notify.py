@@ -6,9 +6,11 @@ import collections
 import threading
 import time
 import queue
+import fnmatch
 
 class TargetWatcher(object):
-    def __init__(self, configuration):
+    def __init__(self, configuration, builder):
+        self._builder = builder
         self._root = configuration.GetExpandedDir("projects", "root_dir")
         self._batch_timeout = float(
             configuration.Get("file_watcher", "event_batch_timeout_ms")) / 1000
@@ -16,8 +18,9 @@ class TargetWatcher(object):
                 "general", "module_definition_filename")
         self.wm = WatchManager()
         
-        self.watched = {}
-        self.watched_module_definitions = collections.defaultdict(set)
+        self.target_by_glob = collections.defaultdict(dict)
+        self.globs_by_target = {}
+        self.watched_module_definitions = collections.defaultdict(dict)
 
         mask = (EventsCodes.ALL_FLAGS['IN_DELETE'] | 
                 EventsCodes.ALL_FLAGS['IN_CREATE'] |
@@ -59,16 +62,23 @@ class TargetWatcher(object):
             if rel_path.endswith(self._moddef_filename):
                 conf_dir = rel_path[:-len(self._moddef_filename)-1]
                 modified_module_definitions.update(
-                        self.watched_module_definitions[conf_dir])
+                    set(self.watched_module_definitions[conf_dir].values()))
             else:
                 #TODO Use efficient search instead of linear scan across dict
-                for watched_key, watched_target in self.watched.items():
-                    if rel_path.startswith(watched_key):
-                        modified_targets.add(watched_target)
-                        break
-                
+                found_targets = {}
+                for glob_pattern, targets in self.target_by_glob.items():
+                    if fnmatch.fnmatchcase(rel_path, glob_pattern):
+                        found_targets.update(targets)
+                if found_targets:
+                    logging.info("Found targets for '%s': %s",
+                                 rel_path, found_targets)
+                    modified_targets.update(found_targets.values())
+                else:
+                    logging.info("No targets for '%s'", rel_path)
+
         if modified_module_definitions or modified_targets:
-            self.ModificationsFound(modified_module_definitions, modified_targets)
+            self.ModificationsFound(modified_module_definitions,
+                                    modified_targets)
 
     def ModificationsFound(self, modified_module_definitions, modified_targets):
         logging.info("Files modified: module definitions %s, other %s",
@@ -81,12 +91,16 @@ class TargetWatcher(object):
         while True:
             try:
                 if event_buffer:
-                    item = self.events_queue.get(block=True,timeout=self._batch_timeout)
+                    item = self.events_queue.get(
+                            block=True,timeout=self._batch_timeout)
                 else:
                     item = self.events_queue.get(block=True)
                 event_buffer.append(item)
             except queue.Empty as e:
-                self.ProcessEventsBatch(event_buffer[:])
+                try:
+                    self.ProcessEventsBatch(event_buffer[:])
+                except e:
+                    logging.exception("Uncaught change event processing error")
                 event_buffer = []
 
     def Join(self):
@@ -94,15 +108,30 @@ class TargetWatcher(object):
 
     def ProcessEvent(self, event):
         self.events_queue.put(event)
+    
+    def _RefreshGlobs(self, target):
+        watched_globs = self._builder.GetWatchableSources(target.GetName())
+        target_dir = os.path.dirname(target.GetName())
+        rel_globs = [os.path.join(target_dir, glob_p)
+                     for glob_p in watched_globs]
+        logging.info("Watchable sources for %s: %s", target, rel_globs)
+        for targets_glob in self.globs_by_target.get(
+                target.GetName(),[]):
+            del self.target_by_glob[targets_glob][target.GetName()]
+        self.globs_by_target[target.GetName()] = rel_globs
+        for rel_glob in rel_globs:
+            self.target_by_glob[rel_glob][target.GetName()] = target
+    
+    def ReloadTarget(self, target):
+        self._RefreshGlobs(target)
 
-    def AddTarget(self, target):
-        self.watched[target.GetName()] = target
+    def AddTarget(self, target): 
+        self._RefreshGlobs(target)
         for prefix in self._GetAllModuleDefinitionsForTarget(target.GetName()):
-            self.watched_module_definitions[prefix].add(target)
-        logging.info("watched %s %s", self.watched, self.watched_module_definitions)
+            self.watched_module_definitions[prefix][target.GetName()]=target
 
     def RemoveTarget(self, target):
         del self.watched[target.GetName()]
         for prefix in self._GetAllModuleDefinitionsForTarget(target.GetName()):
-            self.watched_module_definitions[prefix].remove(target)
+            del self.watched_module_definitions[prefix][target.GetName()]
 

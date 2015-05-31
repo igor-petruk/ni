@@ -59,6 +59,7 @@ class Manager(object):
     def OnRefreshedAsDependency(self, target_name):
         target = self._LoadTarget(target_name)
         self.build_tracker.ReloadTarget(target)
+        self.target_watcher.ReloadTarget(self.build_tracker.GetTarget(target_name))
         logging.info("Manager refreshing %s", target_name)
 
     def OnModifiedFiles(self, modified_module_definitions, modified_other_files):

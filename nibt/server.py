@@ -34,7 +34,7 @@ class Server(object):
                 self.graph, self.targets_state, self.builder,
                 self.compilation_database, self.threading_manager)
         
-        self.target_watcher = notify.TargetWatcher(self.configuration)
+        self.target_watcher = notify.TargetWatcher(self.configuration, self.builder)
         
         self.cpp_plugin = cpp.CppPlugin(
                 self.compilation_database, self.pkg_config, self.threading_manager, self.configuration)

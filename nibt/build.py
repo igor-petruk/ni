@@ -29,6 +29,12 @@ class Builder(object):
         class_name = "%s.%s" % (builder.__class__.__module__, builder.__class__.__name__)
         logging.info("Registering '%s'", class_name)
         self.builders[class_name] = builder
+    
+    def GetWatchableSources(self, target_name):
+        target = self.targets_state.targets[target_name]
+        definition =  target.GetModuleDefinition()
+        builder = self.builders[definition.builder]
+        return builder.GetWatchableSources(target) 
 
     def Build(self, target_name):
         logging.info("Building %s", target_name)

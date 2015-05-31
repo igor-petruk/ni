@@ -98,12 +98,15 @@ class BuildProcessStateEmitter(WebSocketStateEmitter):
             "action": "finished",
             "target_name": target_name
         }
-        assert len(result)==1
-        if result[0].ok():
-            msg["result"]="ok"
+        if len(result)==1:
+            if result[0].ok():
+                msg["result"]="ok"
+            else:
+                msg["result"]="failed"
+                msg["error"]=result[0].GetErrorMessage()
         else:
             msg["result"]="failed"
-            msg["error"]=result[0].GetErrorMessage()
+            msg["error"]="Unsupported number of results: %s" % (len(result),)
         self.EmitEvent(msg)
 
 class WebUIServer(object):
