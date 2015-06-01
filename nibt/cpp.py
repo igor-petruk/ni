@@ -42,7 +42,8 @@ class CppStaticBinaryResult(common.SuccessfulBuildResult, common.ExecutableBuild
         return "bin(%s)" % (self.binary_path,)
 
 class CppStaticLibraryBuilder(object):
-    def __init__(self, compilation_database, pkg_config, threading_manager, configuration):
+    def __init__(self, compilation_database, pkg_config, threading_manager,
+                 configuration):
         self.threading_manager = threading_manager
         self.compilation_database = compilation_database
         self.pkg_config = pkg_config
@@ -55,13 +56,13 @@ class CppStaticLibraryBuilder(object):
 
         no_ext_set = {os.path.splitext(source)[0] for source in sources}
         
-        headers = [no_ext+ext for ext in [".h", ".hpp"] for no_ext in no_ext_set]
+        headers = [no_ext+ext for ext in [".h", ".hpp"]
+                   for no_ext in no_ext_set]
         
         sources.extend(headers)
-        return sources
-
-    def Build(self, context, target_name):
-        target = context.targets[target_name]
+        return sources 
+    
+    def GetCompilationFlags(self, target):
         definition = target.GetModuleDefinition()
         logging.info("Definition %s", definition)
         cflags = definition.cflags
@@ -69,7 +70,19 @@ class CppStaticLibraryBuilder(object):
         pkg_config_deps = definition.pkg_config
         pkg_config_cflags = self.pkg_config.GetFlags(
                 tuple(pkg_config_deps), cflags=True)
+        flags = []
+        flags.extend(cflags)
+        flags.extend(pkg_config_cflags)
+        flags.extend(["-I"+self.root_dir])
+        return flags
+
+    def Build(self, context, target_name):
+        target = context.targets[target_name]
+        definition = target.GetModuleDefinition()
+        pkg_config_deps = definition.pkg_config
         
+        flags = self.GetCompilationFlags(target)
+
         sources = self._ResolveSources(target)
         logging.info("Sources %s", sources)
         
@@ -84,9 +97,7 @@ class CppStaticLibraryBuilder(object):
         for source in sources:
             args = []
             args.extend(["clang++"])
-            args.extend(cflags)
-            args.extend(pkg_config_cflags)
-            args.extend(["-I", self.root_dir])
+            args.extend(flags)
             args.extend(["-c"])
             args.extend([source])
             output_file = os.path.join(

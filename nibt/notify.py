@@ -8,8 +8,37 @@ import time
 import queue
 import fnmatch
 
+
+class WatchIndex(object):
+    def __init__(self):
+        self.target_by_glob = collections.defaultdict(dict)
+        self.globs_by_target = {}
+
+    def GetMatchingTargets(self, rel_path):
+        #TODO Use efficient search instead of linear scan across dict
+        found_targets = {}
+        for glob_pattern, targets in self.target_by_glob.items():
+            if fnmatch.fnmatchcase(rel_path, glob_pattern):
+                found_targets.update(targets)
+        if found_targets:
+            logging.info("Found targets for '%s': %s",
+                         rel_path, found_targets)
+        else:
+            logging.info("No targets for '%s'", rel_path)
+        return found_targets
+    
+    def LoadGlobsForTarget(self, target, rel_globs):
+        logging.info("Setting watchable sources for %s: %s", target, rel_globs)
+        for targets_glob in self.globs_by_target.get(
+                target.GetName(),[]):
+            del self.target_by_glob[targets_glob][target.GetName()]
+        self.globs_by_target[target.GetName()] = rel_globs
+        for rel_glob in rel_globs:
+            self.target_by_glob[rel_glob][target.GetName()] = target
+
+
 class TargetWatcher(object):
-    def __init__(self, configuration, builder):
+    def __init__(self, configuration, builder, watch_index):
         self._builder = builder
         self._root = configuration.GetExpandedDir("projects", "root_dir")
         self._batch_timeout = float(
@@ -18,8 +47,7 @@ class TargetWatcher(object):
                 "general", "module_definition_filename")
         self.wm = WatchManager()
         
-        self.target_by_glob = collections.defaultdict(dict)
-        self.globs_by_target = {}
+        self.watch_index = watch_index
         self.watched_module_definitions = collections.defaultdict(dict)
 
         mask = (EventsCodes.ALL_FLAGS['IN_DELETE'] | 
@@ -64,17 +92,8 @@ class TargetWatcher(object):
                 modified_module_definitions.update(
                     set(self.watched_module_definitions[conf_dir].values()))
             else:
-                #TODO Use efficient search instead of linear scan across dict
-                found_targets = {}
-                for glob_pattern, targets in self.target_by_glob.items():
-                    if fnmatch.fnmatchcase(rel_path, glob_pattern):
-                        found_targets.update(targets)
-                if found_targets:
-                    logging.info("Found targets for '%s': %s",
-                                 rel_path, found_targets)
-                    modified_targets.update(found_targets.values())
-                else:
-                    logging.info("No targets for '%s'", rel_path)
+                found_targets = self.watch_index.GetMatchingTargets(rel_path)
+                modified_targets.update(found_targets.values())
 
         if modified_module_definitions or modified_targets:
             self.ModificationsFound(modified_module_definitions,
@@ -114,14 +133,8 @@ class TargetWatcher(object):
         target_dir = os.path.dirname(target.GetName())
         rel_globs = [os.path.join(target_dir, glob_p)
                      for glob_p in watched_globs]
-        logging.info("Watchable sources for %s: %s", target, rel_globs)
-        for targets_glob in self.globs_by_target.get(
-                target.GetName(),[]):
-            del self.target_by_glob[targets_glob][target.GetName()]
-        self.globs_by_target[target.GetName()] = rel_globs
-        for rel_glob in rel_globs:
-            self.target_by_glob[rel_glob][target.GetName()] = target
-    
+        self.watch_index.LoadGlobsForTarget(target, rel_globs) 
+
     def ReloadTarget(self, target):
         self._RefreshGlobs(target)
 

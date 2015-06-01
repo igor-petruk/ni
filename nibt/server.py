@@ -34,7 +34,10 @@ class Server(object):
                 self.graph, self.targets_state, self.builder,
                 self.compilation_database, self.threading_manager)
         
-        self.target_watcher = notify.TargetWatcher(self.configuration, self.builder)
+        self.watch_index = notify.WatchIndex()
+
+        self.target_watcher = notify.TargetWatcher(
+                self.configuration, self.builder, self.watch_index)
         
         self.cpp_plugin = cpp.CppPlugin(
                 self.compilation_database, self.pkg_config, self.threading_manager, self.configuration)
@@ -52,7 +55,8 @@ class Server(object):
                 self.module_definition_evaluator)
         
         self.dbus_interface = dbusinterface.DBusInterface(
-                self.configuration, self.manager, self.threading_manager)
+                self.configuration, self.manager, self.threading_manager, 
+                self.watch_index, self.builder)
         
         self.tracked_target_state_emitter = web.TrackedTargetsStateEmitter(self.graph)
         self.build_progress_state_emitter = web.BuildProcessStateEmitter(self.builder)

@@ -26,9 +26,13 @@ OK = {
 
 class DBusInterface(dbus.service.Object):
 
-    def __init__(self, configuration, manager, threading_manager):
+    def __init__(
+            self, configuration, manager, threading_manager, watch_index,
+            builder):
         self._root = configuration.GetExpandedDir("projects", "root_dir")
         self.manager = manager
+        self.builder = builder
+        self.watch_index = watch_index
         self.threading_manager = threading_manager
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         self.bus = dbus.SessionBus()
@@ -64,6 +68,28 @@ class DBusInterface(dbus.service.Object):
             self.manager.AddActiveTarget(str(target_name))
             return OK
         self._Execute(Body, reply_handler, error_handler)
+    
+    
+    @dbus.service.method(dbus_interface=APP_SVC_NAME,
+                         in_signature="s",
+                         out_signature="as")
+    def GetCompilationFlags(self, file_name):
+        root_prefix_len = len(self._root)
+        rel_path = file_name[root_prefix_len+1:]
+        targets = self.watch_index.GetMatchingTargets(rel_path)
+        if not targets:
+            logging.info("No compilations flags for '%s'" % rel_path)
+            return []
+        else:
+            key = list(targets.keys())[0]
+            if len(targets)>1:
+                logging.warning(
+                    "File '%s' is watched by multiple targets: "
+                    "%s. Returing compilation flags for '%s'",
+                    rel_path, targets, key)
+            flags = self.builder.GetCompilationFlags(key)
+            logging.info("Flags for '%s': %s", rel_path, flags)
+            return flags
 
     @dbus.service.method(dbus_interface=APP_SVC_NAME,
                          in_signature="s",
