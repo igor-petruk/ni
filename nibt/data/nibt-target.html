@@ -1,14 +1,70 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="bower_components/core-icons/core-icons.html">
+<link rel="import" href="bower_components/paper-dialog/paper-action-dialog.html">
+<link rel="import" href="bower_components/paper-button/paper-button.html">
 
-<polymer-element name="nibt-target">
+<polymer-element name="nibt-target" attributes="targetName state contentDialog">
   <template>
-    Hello
-  </template>
+    <template if="{{ state=='building' }}">
+      <style>
+        paper-spinner.build-spinner {
+          height:16px;
+          width:16px;
+        }
 
+        paper-spinner.build-spinner::shadow .circle {
+          border-color: #4285f4;
+        }
+      </style>
+      <span>
+        <paper-spinner class="build-spinner" active></paper-spinner> 
+       
+        {{targetName}}
+      </span>
+    </template>
+
+    <template if="{{ state!='building' }}">
+      <style>
+       core-icon.common {
+          width: 19px;
+          height: 19px;
+       }
+       core-icon.complete{
+          color: #a4c639;
+       }
+       core-icon.none{
+          color: #aaaaaa;
+       }
+       core-icon.failed{
+          color: #ff3333;
+       }
+      </style>
+      
+      <template if="{{contentDialog}}"> 
+        <paper-action-dialog id="dialog" heading="Message for {{targetName}}">
+          <p><content></content></p>
+          <paper-button affirmative autofocus>Tap me to close</paper-button>
+        </paper-action-dialog>
+      </template>
+      
+      <span on-click={{onTargetClicked}}>
+        <core-icon icon="{{ stateToIcon[state] }}" class="common {{state}}"> </core-icon>
+        {{targetName}}
+      </span>
+    </template>
+  </template>
   <script>
     Polymer({
-      ready: function(){
-        console.log("Hello");
+      stateToIcon: {
+        "complete": "done",
+        "failed": "error",
+        "none": "query-builder"
+      },
+      onTargetClicked: function() {
+        if (this.$.dialog){
+          this.$.dialog.toggle();
+        }
       }
     });
   </script>

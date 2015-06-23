@@ -1,15 +1,22 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
 
-<polymer-element name="nibt-state-receiver" attributes="url">
+<polymer-element name="nibt-state-receiver" attributes="url sameHostPath">
   <template>
   </template>
 
   <script>
     Polymer({
       ws: null, 
-      url: '',
+      url: null,
+      sameHostPath: null,
       ready: function(){
-        this.ws = new WebSocket(this.url);
+        if (this.sameHostPath !== null){
+          this.ws = new WebSocket("ws://"+window.location.host+this.sameHostPath);
+        } else if (this.url !== null){
+          this.ws = new WebSocket(this.url);
+        } else {
+          throw "url or sameHostPath must be set";
+        }
         this.ws.onmessage = this.onMessage.bind(this);
       },
       onMessage: function(evt){

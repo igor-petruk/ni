@@ -4,16 +4,30 @@
         <meta charset="utf-8">
         <title>Hello World</title>
         <link rel="stylesheet" type="text/css" href="style.css">
-        <script src="bower_components/webcomponentsjs/webcomponents.js"></script>
+        <script src="bower_components/webcomponentsjs/webcomponents.min.js"></script>
         <link rel="import" href="nibt-state-receiver.html"/>
         <link rel="import" href="nibt-stream-consumer.html"/>
+        <link rel="import" href="nibt-target.html"/>
     </head>
     <body> 
      
-    <nibt-state-receiver id="sr" url="ws://localhost:8787/ws"> </nibt-state-receiver> 
+    <nibt-state-receiver id="sr" sameHostPath="/ws"> </nibt-state-receiver> 
 
     <nibt-stream-consumer id="sc1" receiver="sr" streamId="track"> </nibt-stream-consumer>
-
+    
+    <ul>
+      <li><nibt-target state="building" targetName="Building"></nibt-target></li>
+      <li><nibt-target state="none" targetName="None"> </nibt-target></li>
+      <li><nibt-target state="complete" targetName="Complete"> </nibt-target></li>
+      <li>
+         <nibt-target state="failed" contentDialog="true" targetName="Failed">
+            I was unable to compile this code for the amazing reasong
+            <ul>
+              <li> Blah-blah-blah! </li>
+            </ul>
+         </nibt-target>
+      </li>
+    </ul>
     <script>
       document.addEventListener('DOMContentLoaded', function(){
         var sc1 = document.querySelector("#sc1")
