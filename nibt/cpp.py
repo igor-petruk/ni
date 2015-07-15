@@ -50,9 +50,11 @@ class CppStaticLibraryBuilder(object):
         self.root_dir = configuration.GetExpandedDir("projects","root_dir")
     
     def GetWatchableSources(self, target):
-        sources = target.GetModuleDefinition().sources[:]
+        sources = target.GetModuleDefinition().sources
         if sources is None:
-            sources = [target.GetName()+ext for ext in [".cc", ".cpp", ".c++"]]
+            sources = [os.path.basename(target.GetName())+ext for ext in [".cc", ".cpp", ".c++"]]
+        else:
+            sources = sources[:]
 
         no_ext_set = {os.path.splitext(source)[0] for source in sources}
         
@@ -60,6 +62,7 @@ class CppStaticLibraryBuilder(object):
                    for no_ext in no_ext_set]
         
         sources.extend(headers)
+        logging.info("For target %s must watch %s", target, sources)
         return sources 
     
     def GetCompilationFlags(self, target):
